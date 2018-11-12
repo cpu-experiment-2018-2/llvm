@@ -11,7 +11,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalAlias.h"
@@ -26,6 +25,7 @@
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/MC/SectionKind.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
+#include "llvm/Target/TargetMachine.h"
 using namespace llvm;
 
 //---------------------------------------------------------------------------
@@ -37,8 +37,7 @@ TargetMachine::TargetMachine(const Target &T, StringRef DataLayoutString,
                              const TargetOptions &Options)
     : TheTarget(T), DL(DataLayoutString), TargetTriple(TT), TargetCPU(CPU),
       TargetFS(FS), AsmInfo(nullptr), MRI(nullptr), MII(nullptr), STI(nullptr),
-      RequireStructuredCFG(false), DefaultOptions(Options), Options(Options) {
-}
+      RequireStructuredCFG(false), DefaultOptions(Options), Options(Options) {}
 
 TargetMachine::~TargetMachine() = default;
 
@@ -66,8 +65,7 @@ void TargetMachine::resetTargetOptions(const Function &F) const {
   RESET_OPTION(NoSignedZerosFPMath, "no-signed-zeros-fp-math");
   RESET_OPTION(NoTrappingFPMath, "no-trapping-math");
 
-  StringRef Denormal =
-    F.getFnAttribute("denormal-fp-math").getValueAsString();
+  StringRef Denormal = F.getFnAttribute("denormal-fp-math").getValueAsString();
   if (Denormal == "ieee")
     Options.FPDenormalMode = FPDenormal::IEEE;
   else if (Denormal == "preserve-sign")

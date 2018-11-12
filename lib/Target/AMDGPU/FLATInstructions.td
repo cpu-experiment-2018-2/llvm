@@ -275,7 +275,7 @@ multiclass FLAT_Atomic_Pseudo<
        AtomicNoRet <opName, 1>;
 }
 
-multiclass FLAT_Global_Atomic_Pseudo_NO_RTN<
+multiclass FLAT_Global_Atomic_Pseudo<
   string opName,
   RegisterClass vdst_rc,
   ValueType vt,
@@ -292,25 +292,6 @@ multiclass FLAT_Global_Atomic_Pseudo_NO_RTN<
     let PseudoInstr = NAME;
   }
 
-  def _SADDR : FLAT_AtomicNoRet_Pseudo <opName,
-    (outs),
-    (ins VReg_64:$vaddr, data_rc:$vdata, SReg_64:$saddr, offset_s13:$offset, SLC:$slc),
-    " $vaddr, $vdata, $saddr$offset$slc">,
-    AtomicNoRet <opName#"_saddr", 0> {
-    let has_saddr = 1;
-    let enabled_saddr = 1;
-    let PseudoInstr = NAME#"_SADDR";
-  }
-}
-
-multiclass FLAT_Global_Atomic_Pseudo_RTN<
-  string opName,
-  RegisterClass vdst_rc,
-  ValueType vt,
-  SDPatternOperator atomic = null_frag,
-  ValueType data_vt = vt,
-  RegisterClass data_rc = vdst_rc> {
-
   def _RTN : FLAT_AtomicRet_Pseudo <opName,
     (outs vdst_rc:$vdst),
       (ins VReg_64:$vaddr, data_rc:$vdata, offset_s13:$offset, SLC:$slc),
@@ -319,6 +300,16 @@ multiclass FLAT_Global_Atomic_Pseudo_RTN<
       (atomic (FLATSignedAtomic i64:$vaddr, i16:$offset, i1:$slc), data_vt:$vdata))]>,
       AtomicNoRet <opName, 1> {
     let has_saddr = 1;
+  }
+
+  def _SADDR : FLAT_AtomicNoRet_Pseudo <opName,
+    (outs),
+    (ins VReg_64:$vaddr, data_rc:$vdata, SReg_64:$saddr, offset_s13:$offset, SLC:$slc),
+    " $vaddr, $vdata, $saddr$offset$slc">,
+    AtomicNoRet <opName#"_saddr", 0> {
+    let has_saddr = 1;
+    let enabled_saddr = 1;
+    let PseudoInstr = NAME#"_SADDR";
   }
 
   def _SADDR_RTN : FLAT_AtomicRet_Pseudo <opName,
@@ -331,16 +322,6 @@ multiclass FLAT_Global_Atomic_Pseudo_RTN<
      let PseudoInstr = NAME#"_SADDR_RTN";
   }
 }
-
-multiclass FLAT_Global_Atomic_Pseudo<
-  string opName,
-  RegisterClass vdst_rc,
-  ValueType vt,
-  SDPatternOperator atomic = null_frag,
-  ValueType data_vt = vt,
-  RegisterClass data_rc = vdst_rc> :
-    FLAT_Global_Atomic_Pseudo_NO_RTN<opName, vdst_rc, vt, atomic, data_vt, data_rc>,
-    FLAT_Global_Atomic_Pseudo_RTN<opName, vdst_rc, vt, atomic, data_vt, data_rc>;
 
 class flat_binary_atomic_op<SDNode atomic_op> : PatFrag<
   (ops node:$ptr, node:$value),

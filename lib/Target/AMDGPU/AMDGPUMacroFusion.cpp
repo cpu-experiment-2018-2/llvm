@@ -42,12 +42,9 @@ static bool shouldScheduleAdjacent(const TargetInstrInfo &TII_,
     if (!FirstMI)
       return true;
 
-    const MachineBasicBlock &MBB = *FirstMI->getParent();
-    const MachineRegisterInfo &MRI = MBB.getParent()->getRegInfo();
-    const TargetRegisterInfo *TRI = MRI.getTargetRegisterInfo();
     const MachineOperand *Src2 = TII.getNamedOperand(SecondMI,
                                                      AMDGPU::OpName::src2);
-    return FirstMI->definesRegister(Src2->getReg(), TRI);
+    return FirstMI->definesRegister(Src2->getReg());
   }
   default:
     return false;

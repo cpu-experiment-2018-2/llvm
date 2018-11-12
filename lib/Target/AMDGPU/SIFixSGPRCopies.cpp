@@ -183,15 +183,13 @@ getCopyRegClasses(const MachineInstr &Copy,
 static bool isVGPRToSGPRCopy(const TargetRegisterClass *SrcRC,
                              const TargetRegisterClass *DstRC,
                              const SIRegisterInfo &TRI) {
-  return SrcRC != &AMDGPU::VReg_1RegClass && TRI.isSGPRClass(DstRC) &&
-         TRI.hasVGPRs(SrcRC);
+  return TRI.isSGPRClass(DstRC) && TRI.hasVGPRs(SrcRC);
 }
 
 static bool isSGPRToVGPRCopy(const TargetRegisterClass *SrcRC,
                              const TargetRegisterClass *DstRC,
                              const SIRegisterInfo &TRI) {
-  return DstRC != &AMDGPU::VReg_1RegClass && TRI.isSGPRClass(SrcRC) &&
-         TRI.hasVGPRs(DstRC);
+  return TRI.isSGPRClass(SrcRC) && TRI.hasVGPRs(DstRC);
 }
 
 static bool tryChangeVGPRtoSGPRinCopy(MachineInstr &MI,
@@ -329,7 +327,9 @@ static bool phiHasBreakDef(const MachineInstr &PHI,
     switch (DefInstr->getOpcode()) {
     default:
       break;
+    case AMDGPU::SI_BREAK:
     case AMDGPU::SI_IF_BREAK:
+    case AMDGPU::SI_ELSE_BREAK:
       return true;
     case AMDGPU::PHI:
       if (phiHasBreakDef(*DefInstr, MRI, Visited))

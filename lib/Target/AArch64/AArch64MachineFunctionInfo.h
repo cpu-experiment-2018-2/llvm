@@ -18,7 +18,6 @@
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/MC/MCLinkerOptimizationHint.h"
 #include <cassert>
@@ -98,9 +97,6 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
   /// attribute, in which case it is set to false at construction.
   Optional<bool> HasRedZone;
 
-  /// ForwardedMustTailRegParms - A list of virtual and physical registers
-  /// that must be forwarded to every musttail call.
-  SmallVector<ForwardedRegister, 1> ForwardedMustTailRegParms;
 public:
   AArch64FunctionInfo() = default;
 
@@ -211,10 +207,6 @@ public:
   void addLOHDirective(MCLOHType Kind, MILOHArgs Args) {
     LOHContainerSet.push_back(MILOHDirective(Kind, Args));
     LOHRelated.insert(Args.begin(), Args.end());
-  }
-
-  SmallVectorImpl<ForwardedRegister> &getForwardedMustTailRegParms() {
-    return ForwardedMustTailRegParms;
   }
 
 private:

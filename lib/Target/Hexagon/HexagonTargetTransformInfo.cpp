@@ -54,7 +54,7 @@ bool HexagonTTIImpl::isTypeForHVX(Type *VecTy) const {
     return false;
   if (ST.isHVXVectorType(VecVT.getSimpleVT()))
     return true;
-  auto Action = TLI.getPreferredVectorAction(VecVT.getSimpleVT());
+  auto Action = TLI.getPreferredVectorAction(VecVT);
   return Action == TargetLoweringBase::TypeWidenVector;
 }
 
@@ -206,12 +206,10 @@ unsigned HexagonTTIImpl::getGatherScatterOpCost(unsigned Opcode, Type *DataTy,
 
 unsigned HexagonTTIImpl::getInterleavedMemoryOpCost(unsigned Opcode,
       Type *VecTy, unsigned Factor, ArrayRef<unsigned> Indices,
-      unsigned Alignment, unsigned AddressSpace, bool UseMaskForCond,
-      bool UseMaskForGaps) {
-  if (Indices.size() != Factor || UseMaskForCond || UseMaskForGaps)
+      unsigned Alignment, unsigned AddressSpace, bool IsMasked) {
+  if (Indices.size() != Factor || IsMasked)
     return BaseT::getInterleavedMemoryOpCost(Opcode, VecTy, Factor, Indices,
-                                             Alignment, AddressSpace,
-                                             UseMaskForCond, UseMaskForGaps);
+                                             Alignment, AddressSpace, IsMasked);
   return getMemoryOpCost(Opcode, VecTy, Alignment, AddressSpace, nullptr);
 }
 

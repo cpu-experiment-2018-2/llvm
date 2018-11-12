@@ -347,10 +347,6 @@ AMDGPUTargetELFStreamer::AMDGPUTargetELFStreamer(
   if (AMDGPU::hasXNACK(STI))
     EFlags |= ELF::EF_AMDGPU_XNACK;
 
-  EFlags &= ~ELF::EF_AMDGPU_SRAM_ECC;
-  if (AMDGPU::hasSRAMECC(STI))
-    EFlags |= ELF::EF_AMDGPU_SRAM_ECC;
-
   MCA.setELFHeaderEFlags(EFlags);
 }
 

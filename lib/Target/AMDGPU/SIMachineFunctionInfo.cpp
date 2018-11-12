@@ -117,6 +117,7 @@ SIMachineFunctionInfo::SIMachineFunctionInfo(const MachineFunction &MF)
   }
 
   const MachineFrameInfo &FrameInfo = MF.getFrameInfo();
+  bool MaySpill = ST.isVGPRSpillingEnabled(F);
   bool HasStackObjects = FrameInfo.hasStackObjects();
 
   if (isEntryFunction()) {
@@ -125,18 +126,21 @@ SIMachineFunctionInfo::SIMachineFunctionInfo(const MachineFunction &MF)
     if (WorkItemIDZ)
       WorkItemIDY = true;
 
-    PrivateSegmentWaveByteOffset = true;
+    if (HasStackObjects || MaySpill) {
+      PrivateSegmentWaveByteOffset = true;
 
     // HS and GS always have the scratch wave offset in SGPR5 on GFX9.
     if (ST.getGeneration() >= AMDGPUSubtarget::GFX9 &&
         (CC == CallingConv::AMDGPU_HS || CC == CallingConv::AMDGPU_GS))
-      ArgInfo.PrivateSegmentWaveByteOffset =
-          ArgDescriptor::createRegister(AMDGPU::SGPR5);
+      ArgInfo.PrivateSegmentWaveByteOffset
+        = ArgDescriptor::createRegister(AMDGPU::SGPR5);
+    }
   }
 
   bool isAmdHsaOrMesa = ST.isAmdHsaOrMesa(F);
   if (isAmdHsaOrMesa) {
-    PrivateSegmentBuffer = true;
+    if (HasStackObjects || MaySpill)
+      PrivateSegmentBuffer = true;
 
     if (F.hasFnAttribute("amdgpu-dispatch-ptr"))
       DispatchPtr = true;
@@ -147,7 +151,8 @@ SIMachineFunctionInfo::SIMachineFunctionInfo(const MachineFunction &MF)
     if (F.hasFnAttribute("amdgpu-dispatch-id"))
       DispatchID = true;
   } else if (ST.isMesaGfxShader(F)) {
-    ImplicitBufferPtr = true;
+    if (HasStackObjects || MaySpill)
+      ImplicitBufferPtr = true;
   }
 
   if (F.hasFnAttribute("amdgpu-kernarg-segment-ptr"))

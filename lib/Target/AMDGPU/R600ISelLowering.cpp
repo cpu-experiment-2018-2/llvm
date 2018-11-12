@@ -1685,15 +1685,14 @@ bool R600TargetLowering::allowsMisalignedMemoryAccesses(EVT VT,
 static SDValue CompactSwizzlableVector(
   SelectionDAG &DAG, SDValue VectorEntry,
   DenseMap<unsigned, unsigned> &RemapSwizzle) {
+  assert(VectorEntry.getOpcode() == ISD::BUILD_VECTOR);
   assert(RemapSwizzle.empty());
-
-  SDLoc DL(VectorEntry);
-  EVT EltTy = VectorEntry.getValueType().getVectorElementType();
-
-  SDValue NewBldVec[4];
-  for (unsigned i = 0; i < 4; i++)
-    NewBldVec[i] = DAG.getNode(ISD::EXTRACT_VECTOR_ELT, DL, EltTy, VectorEntry,
-                               DAG.getIntPtrConstant(i, DL));
+  SDValue NewBldVec[4] = {
+    VectorEntry.getOperand(0),
+    VectorEntry.getOperand(1),
+    VectorEntry.getOperand(2),
+    VectorEntry.getOperand(3)
+  };
 
   for (unsigned i = 0; i < 4; i++) {
     if (NewBldVec[i].isUndef())
@@ -1728,17 +1727,15 @@ static SDValue CompactSwizzlableVector(
 
 static SDValue ReorganizeVector(SelectionDAG &DAG, SDValue VectorEntry,
                                 DenseMap<unsigned, unsigned> &RemapSwizzle) {
+  assert(VectorEntry.getOpcode() == ISD::BUILD_VECTOR);
   assert(RemapSwizzle.empty());
-
-  SDLoc DL(VectorEntry);
-  EVT EltTy = VectorEntry.getValueType().getVectorElementType();
-
-  SDValue NewBldVec[4];
-  bool isUnmovable[4] = {false, false, false, false};
-  for (unsigned i = 0; i < 4; i++)
-    NewBldVec[i] = DAG.getNode(ISD::EXTRACT_VECTOR_ELT, DL, EltTy, VectorEntry,
-                               DAG.getIntPtrConstant(i, DL));
-
+  SDValue NewBldVec[4] = {
+      VectorEntry.getOperand(0),
+      VectorEntry.getOperand(1),
+      VectorEntry.getOperand(2),
+      VectorEntry.getOperand(3)
+  };
+  bool isUnmovable[4] = { false, false, false, false };
   for (unsigned i = 0; i < 4; i++) {
     RemapSwizzle[i] = i;
     if (NewBldVec[i].getOpcode() == ISD::EXTRACT_VECTOR_ELT) {
@@ -1769,6 +1766,7 @@ static SDValue ReorganizeVector(SelectionDAG &DAG, SDValue VectorEntry,
 SDValue R600TargetLowering::OptimizeSwizzle(SDValue BuildVector, SDValue Swz[4],
                                             SelectionDAG &DAG,
                                             const SDLoc &DL) const {
+  assert(BuildVector.getOpcode() == ISD::BUILD_VECTOR);
   // Old -> New swizzle values
   DenseMap<unsigned, unsigned> SwizzleRemap;
 

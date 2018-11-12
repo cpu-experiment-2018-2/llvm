@@ -169,8 +169,7 @@ AArch64LegalizerInfo::AArch64LegalizerInfo(const AArch64Subtarget &ST) {
       .lowerIf([=](const LegalityQuery &Query) {
         return Query.Types[0].getSizeInBits() != Query.MMODescrs[0].SizeInBits;
       })
-      .clampNumElements(0, v2s32, v2s32)
-      .clampMaxNumElements(0, s64, 1);
+      .clampNumElements(0, v2s32, v2s32);
 
   getActionDefinitionsBuilder(G_STORE)
       .legalForTypesWithMemSize({{s8, p0, 8},
@@ -188,8 +187,7 @@ AArch64LegalizerInfo::AArch64LegalizerInfo(const AArch64Subtarget &ST) {
         return Query.Types[0].isScalar() &&
                Query.Types[0].getSizeInBits() != Query.MMODescrs[0].SizeInBits;
       })
-      .clampNumElements(0, v2s32, v2s32)
-      .clampMaxNumElements(0, s64, 1);
+      .clampNumElements(0, v2s32, v2s32);
 
   // Constants
   getActionDefinitionsBuilder(G_CONSTANT)

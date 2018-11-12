@@ -322,6 +322,7 @@ protected:
 
   // Used as options.
   bool EnableHugePrivateBuffer;
+  bool EnableVGPRSpilling;
   bool EnableLoadStoreOpt;
   bool EnableUnsafeDSOffsetFolding;
   bool EnableSIScheduler;
@@ -353,7 +354,7 @@ protected:
   bool HasDPP;
   bool HasR128A16;
   bool HasDLInsts;
-  bool EnableSRAMECC;
+  bool D16PreservesUnusedBits;
   bool FlatAddressSpace;
   bool FlatInstOffsets;
   bool FlatGlobalInsts;
@@ -679,8 +680,8 @@ public:
     return HasDLInsts;
   }
 
-  bool isSRAMECCEnabled() const {
-    return EnableSRAMECC;
+  bool d16PreservesUnusedBits() const {
+    return D16PreservesUnusedBits;
   }
 
   // Scratch is allocated in 256 dword per wave blocks for the entire
@@ -746,6 +747,8 @@ public:
 
   void overrideSchedPolicy(MachineSchedPolicy &Policy,
                            unsigned NumRegionInstrs) const override;
+
+  bool isVGPRSpillingEnabled(const Function &F) const;
 
   unsigned getMaxNumUserSGPRs() const {
     return 16;

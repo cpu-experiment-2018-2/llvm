@@ -1030,10 +1030,10 @@ static void addExclusiveRegPair(MachineInstrBuilder &MIB, MachineOperand &Reg,
   if (IsThumb) {
     unsigned RegLo = TRI->getSubReg(Reg.getReg(), ARM::gsub_0);
     unsigned RegHi = TRI->getSubReg(Reg.getReg(), ARM::gsub_1);
-    MIB.addReg(RegLo, Flags);
-    MIB.addReg(RegHi, Flags);
+    MIB.addReg(RegLo, Flags | getKillRegState(Reg.isDead()));
+    MIB.addReg(RegHi, Flags | getKillRegState(Reg.isDead()));
   } else
-    MIB.addReg(Reg.getReg(), Flags);
+    MIB.addReg(Reg.getReg(), Flags | getKillRegState(Reg.isDead()));
 }
 
 /// Expand a 64-bit CMP_SWAP to an ldrexd/strexd loop.
@@ -1103,8 +1103,7 @@ bool ARMExpandPseudo::ExpandCMP_SWAP_64(MachineBasicBlock &MBB,
   //     bne .Lloadcmp
   unsigned STREXD = IsThumb ? ARM::t2STREXD : ARM::STREXD;
   MIB = BuildMI(StoreBB, DL, TII->get(STREXD), TempReg);
-  unsigned Flags = getKillRegState(New.isDead());
-  addExclusiveRegPair(MIB, New, Flags, IsThumb, TRI);
+  addExclusiveRegPair(MIB, New, 0, IsThumb, TRI);
   MIB.addReg(AddrReg).add(predOps(ARMCC::AL));
 
   unsigned CMPri = IsThumb ? ARM::t2CMPri : ARM::CMPri;
