@@ -15,6 +15,7 @@ extern "C" void LLVMInitializeELMOTarget() {
                                          llvm::CodeGenOpt::Level lv,bool JIT):
             LLVMTargetMachine(T, layout, TT,CPU,FS,Options, Reloc::Static, CodeModel::Small, lv){
         WithColor::note() << "ELMOTargetmachine was called\n" ;
+        initAsmInfo();
     }
 
 }

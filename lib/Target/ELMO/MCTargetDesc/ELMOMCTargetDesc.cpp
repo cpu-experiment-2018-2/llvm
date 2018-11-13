@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <llvm/Support/WithColor.h>
 #include "MCTargetDesc/ELMOMCTargetDesc.h"
 #include "ELMOMCAsmInfo.h"
 #include "llvm/MC/MCELFStreamer.h"
@@ -39,9 +40,15 @@ using namespace llvm;
 #include "ELMOGenRegisterInfo.inc"
 
 static MCAsmInfo * createELMOMCAsmInfo(const MCRegisterInfo &MRI, const Triple & TT){
+    WithColor::note() << "MCAsmInfoAllocater\n";
+
     MCAsmInfo* MAI = new ELMOMCAsmInfo(TT);
+
     return MAI;
 }
 extern "C" void LLVMInitializeELMOTargetMC() {
+    WithColor::note() << "InitTargetMC\n";
+
+
     RegisterMCAsmInfoFn X(getTheELMOTarget(),createELMOMCAsmInfo);
 }

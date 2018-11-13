@@ -7,7 +7,6 @@ namespace llvm {
 class Target;
 class Triple;
 
-extern Target TheELMOTarget;
 Target&getTheELMOTarget();
 } // End llvm namespace
 

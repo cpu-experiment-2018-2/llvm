@@ -3,10 +3,11 @@
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 
-Target llvm::TheELMOTarget;
-Target &llvm::getTheELMOTarget() { return TheELMOTarget; }
+Target &llvm::getTheELMOTarget() {
+    static Target TheELMOTarget;
+    return TheELMOTarget; }
 extern "C" void LLVMInitializeELMOTargetInfo() {
   RegisterTarget<Triple::elmo,
                  /*HasJIT=*/false>
-      X(TheELMOTarget, "ELMO", "ELMO", "ELMO");
+      X(getTheELMOTarget(), "ELMO", "ELMO", "ELMO");
 }
