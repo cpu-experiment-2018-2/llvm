@@ -6,8 +6,8 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-  class ELMOTargetMachine;
-  class FunctionPass;
+class ELMOTargetMachine;
+class FunctionPass;
 } // end namespace llvm;
 
 #endif

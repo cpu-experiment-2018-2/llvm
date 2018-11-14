@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <llvm/Support/WithColor.h>
+#include "InstPrinter/ELMOInstPrinter.h"
 #include "MCTargetDesc/ELMOMCTargetDesc.h"
 #include "ELMOMCAsmInfo.h"
 #include "llvm/MC/MCELFStreamer.h"
@@ -46,9 +47,34 @@ static MCAsmInfo * createELMOMCAsmInfo(const MCRegisterInfo &MRI, const Triple &
 
     return MAI;
 }
-extern "C" void LLVMInitializeELMOTargetMC() {
+static MCInstrInfo* createELMOMCInstrInfo(){
+ MCInstrInfo *X = new MCInstrInfo();
+ InitELMOMCInstrInfo(X);
+ return X;
+}
+static MCRegisterInfo *createELMOMCRegisterInfo(const Triple & /*TT*/) {
+    MCRegisterInfo *X = new MCRegisterInfo();
+    InitELMOMCRegisterInfo(X, 0, 0, 0,0 );
+    return X;
+}
+
+static MCInstPrinter *createELMOMCInstPrinter(const Triple &T,
+                                               unsigned SyntaxVariant,
+                                               const MCAsmInfo &MAI,
+                                               const MCInstrInfo &MII,
+                                               const MCRegisterInfo &MRI) {
+    return new ELMOInstPrinter(MAI, MII, MRI);
+}extern "C" void LLVMInitializeELMOTargetMC() {
     WithColor::note() << "InitTargetMC\n";
 
-
     RegisterMCAsmInfoFn X(getTheELMOTarget(),createELMOMCAsmInfo);
+
+// Register the MC instruction info.
+TargetRegistry::RegisterMCInstrInfo(getTheELMOTarget(),
+        createELMOMCInstrInfo);
+
+// Register the MC register info.
+TargetRegistry::RegisterMCRegInfo(getTheELMOTarget(),
+        createELMOMCRegisterInfo);
+TargetRegistry::RegisterMCInstPrinter(getTheELMOTarget(), createELMOMCInstPrinter);
 }

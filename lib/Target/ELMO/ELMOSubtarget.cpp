@@ -8,9 +8,7 @@
 
 using namespace llvm;
 
-
-ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU,
-                             StringRef FS)
+ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS)
     : ELMOGenSubtargetInfo(TT, CPU, FS) {
   std::string CPUName = "generic";
 

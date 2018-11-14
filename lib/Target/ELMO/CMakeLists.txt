@@ -1,14 +1,14 @@
 
 set(LLVM_TARGET_DEFINITIONS ELMO.td)
 
-#tablegen(LLVM PPCGenAsmMatcher.inc -gen-asm-matcher)
-#tablegen(LLVM ELMOGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM PPCGenAsmMatcher.inc -gen-asm-matcher)
+tablegen(LLVM ELMOGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM ELMOGenCallingConv.inc -gen-callingconv)
-#tablegen(LLVM ELMOGenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM ELMOGenDAGISel.inc -gen-dag-isel)
 #tablegen(LLVM ELMOGenDisassemblerTables.inc -gen-disassembler)
-#tablegen(LLVM ELMOGenFastISel.inc -gen-fast-isel)
+tablegen(LLVM ELMOGenFastISel.inc -gen-fast-isel)
 tablegen(LLVM ELMOGenInstrInfo.inc -gen-instr-info)
-#tablegen(LLVM ELMOGenMCCodeEmitter.inc -gen-emitter)
+tablegen(LLVM ELMOGenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM ELMOGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM ELMOGenSubtargetInfo.inc -gen-subtarget)
 

@@ -18,16 +18,20 @@ include "llvm/Target/Target.td"
 class Proc<string Name, list<SubtargetFeature> Features>
  : Processor<Name, NoItineraries, Features>;
 def : Proc<"generic", []>;
+
 include "ELMORegisterInfo.td"
 include "ELMOInstrInfo.td"
 include "ELMOCallingConv.td"
 
+def ELMOInstPrinter : AsmWriter {
+    string AsmWriterClassName = "InstPrinter";
+    bit isMcAsmWriter = 1;
+}
 def ELMOInstrInfo : InstrInfo;
 def ELMO : Target {
   // Pull in Instruction Info:
   let InstructionSet = ELMOInstrInfo;
-  let AssemblyParsers  = [];
-  let AssemblyWriters = [];
+  let AssemblyWriters = [ELMOInstPrinter];
   let AllowRegisterRenaming = 1;
 }
 

@@ -16,8 +16,7 @@ class ELMOSubtarget : public ELMOGenSubtargetInfo {
   virtual void anchor(){};
 
 public:
-  ELMOSubtarget(const Triple &TT, StringRef CPU,
-                               StringRef FS);
+  ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS);
   void ParseSubtargetFeatures(StringRef CPU, StringRef FS);
 };
 }

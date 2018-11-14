@@ -1,8 +1,8 @@
-#ifndef ELMOINSTPRINTER_H
-#define ELMOINSTPRINTER_H
+#ifndef LLVM_LIB_TARGET_ELMO_INSTPRINTER_ELMOINSTPRINTER_H
+#define LLVM_LIB_TARGET_ELMO_INSTPRINTER_ELMOINSTPRINTER_H
 #include "llvm/MC/MCInstPrinter.h"
+
 namespace llvm {
-class TargetMachine;
 class ELMOInstPrinter : public MCInstPrinter {
 public:
   ELMOInstPrinter(const MCAsmInfo &MAI, const MCInstrInfo &MII,
@@ -12,9 +12,25 @@ public:
   void printInstruction(const MCInst *MI, raw_ostream &O);
   static const char *getRegisterName(unsigned RegNo);
 
-  virtual void printRegName(raw_ostream &OS, unsigned RegNo) const override;
-  virtual void printInst(const MCInst *MI, raw_ostream &OS, StringRef Annot,
+    bool printAliasInstr(const MCInst *MI, const MCSubtargetInfo &STI,
+                         raw_ostream &O);
+    void printCustomAliasOperand(const MCInst *MI, unsigned OpIdx,
+                                 unsigned PrintMethodIdx,
+                                 const MCSubtargetInfo &STI, raw_ostream &O);
+
+
+  void printRegName(raw_ostream &OS, unsigned RegNo) const override;
+  void printInst(const MCInst *MI, raw_ostream &OS, StringRef Annot,
                          const MCSubtargetInfo &STI) override;
+
+  void printOperand(const MCInst *MI, int opNum,
+                      raw_ostream &OS);
+  void printMemOperand(const MCInst *MI, int opNum,
+                         raw_ostream &OS, const char *Modifier = nullptr);
+  void printCCOperand(const MCInst *MI, int opNum,
+                        raw_ostream &OS);
+  bool printGetPCX(const MCInst *MI, unsigned OpNo,
+                     raw_ostream &OS);
 };
 }
 #endif

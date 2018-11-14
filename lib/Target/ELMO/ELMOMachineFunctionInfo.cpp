@@ -1,5 +1,4 @@
 #include "ELMOMachineFunctionInfo.h"
-namespace llvm
-{
-    void ELMOMachineFunctionInfo ::anchor() {}
+namespace llvm {
+void ELMOMachineFunctionInfo::anchor() {}
 }
