@@ -1,6 +1,7 @@
 #include "ELMO.h"
 #include "ELMOSubtarget.h"
 #include "ELMOTargetMachine.h"
+#include "ELMOTargetObjectFile.h"
 #include "llvm/Support/TargetRegistry.h"
 #include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/Support/WithColor.h>
@@ -20,7 +21,8 @@ ELMOTargetMachine::ELMOTargetMachine(const llvm::Target &T,
                                      Optional<CodeModel::Model> CM,
                                      llvm::CodeGenOpt::Level lv, bool JIT)
     : LLVMTargetMachine(T, layout, TT, CPU, FS, Options, Reloc::Static,
-                        CodeModel::Small, lv) {
+                        CodeModel::Small, lv),
+      TLOF(make_unique<ELMOELFTargetObjectFile>()) {
   WithColor::note() << "ELMOTargetmachine was called\n";
   initAsmInfo();
 }

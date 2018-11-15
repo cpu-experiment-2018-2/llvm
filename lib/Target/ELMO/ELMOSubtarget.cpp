@@ -1,15 +1,25 @@
+
 #include "ELMOSubtarget.h"
 #include "ELMO.h"
 #include "llvm/Support/TargetRegistry.h"
 
+#define DEBUG_TYPE "elmo-subtarget"
+
 #define GET_SUBTARGETINFO_TARGET_DESC
-//#define GET_SUBTARGETINFO_CTOR
-//#include "ELMOGenSubtargetInfo.inc"
+#define GET_SUBTARGETINFO_CTOR
+#include "ELMOGenSubtargetInfo.inc"
 
 using namespace llvm;
 
-ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS)
-    : ELMOGenSubtargetInfo(TT, CPU, FS) {
+ELMOSubtarget &ELMOSubtarget::init(StringRef CPU, StringRef FS) {
+  return *this;
+}
+
+ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS,const TargetMachine & TM)
+    : ELMOGenSubtargetInfo(TT, CPU, FS) , InstrInfo(init(CPU,FS)), TLInfo(TM,*this),FrameLowering(*this)
+)
+{
+
   std::string CPUName = "generic";
 
   // Parse features string.

@@ -1,12 +1,14 @@
 #include "ELMOFrameLowering.h"
-
+#include "ELMOInstrInfo.h"
+#include "ELMOMachineFunctionInfo.h"
+#include "ELMOSubtarget.h"
 namespace llvm {
-ELMOFrameLowering::ELMOFrameLowering(const llvm::ELMOSubTarget &ST)
+ELMOFrameLowering::ELMOFrameLowering(const ELMOSubTarget &ST)
     : TargetFrameLowering(TargetFrameLowering::StackGrowsUp, 0, 0,
                           0) // 怪しいから治す
 {}
 void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
-                                     llvm::MachineBasicBlock &MBB) const {}
+                                     MachineBasicBlock &MBB) const {}
 void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
-                                     llvm::MachineBasicBlock &MBB) const {}
+                                     MachineBasicBlock &MBB) const {}
 }

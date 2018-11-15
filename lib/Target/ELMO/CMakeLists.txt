@@ -16,7 +16,7 @@ add_public_tablegen_target(ELMOCommonTableGen)
 
 add_llvm_target(ELMOCodeGen
   # ELMOBoolRetToInt.cpp
-  # ELMOAsmPrinter.cpp
+  ELMOAsmPrinter.cpp
   # ELMOBranchSelector.cpp
   # ELMOBranchCoalescing.cpp
   # ELMOCCState.cpp
@@ -36,7 +36,7 @@ add_llvm_target(ELMOCodeGen
   # ELMOQPXLoadSplat.cpp
   ELMOSubtarget.cpp
   ELMOTargetMachine.cpp
-  # ELMOTargetObjectFile.cpp
+  ELMOTargetObjectFile.cpp
   # ELMOTargetTransformInfo.cpp
   # ELMOTOCRegDeps.cpp
   # ELMOTLSDynamicCall.cpp

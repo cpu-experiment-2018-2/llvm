@@ -15,16 +15,18 @@ using namespace llvm;
 
 #include "ELMOGenAsmWriter.inc"
 void ELMOInstPrinter::printOperand(const MCInst *MI, int opNum,
-                  raw_ostream &OS) {}
+                                   raw_ostream &OS) {}
 void ELMOInstPrinter::printMemOperand(const MCInst *MI, int opNum,
-                     raw_ostream &OS, const char *Modifier ) {}
+                                      raw_ostream &OS, const char *Modifier) {}
 void ELMOInstPrinter::printCCOperand(const MCInst *MI, int opNum,
-                    raw_ostream &OS) {}
+                                     raw_ostream &OS) {}
 bool ELMOInstPrinter::printGetPCX(const MCInst *MI, unsigned OpNo,
-                 raw_ostream &OS) {}
+                                  raw_ostream &OS) {}
 
-void ELMOInstPrinter::printRegName(llvm::raw_ostream &OS, unsigned RegNo) const {
-        OS << "%r" << RegNo;
+void ELMOInstPrinter::printRegName(llvm::raw_ostream &OS,
+                                   unsigned RegNo) const {
+  OS << "%r" << RegNo;
 }
-void ELMOInstPrinter::printInst(const llvm::MCInst *MI, llvm::raw_ostream &OS, llvm::StringRef Annot,
+void ELMOInstPrinter::printInst(const llvm::MCInst *MI, llvm::raw_ostream &OS,
+                                llvm::StringRef Annot,
                                 const llvm::MCSubtargetInfo &STI) {}

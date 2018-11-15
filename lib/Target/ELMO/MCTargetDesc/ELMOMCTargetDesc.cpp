@@ -64,7 +64,8 @@ static MCInstPrinter *createELMOMCInstPrinter(const Triple &T,
                                                const MCInstrInfo &MII,
                                                const MCRegisterInfo &MRI) {
     return new ELMOInstPrinter(MAI, MII, MRI);
-}extern "C" void LLVMInitializeELMOTargetMC() {
+}
+extern "C" void LLVMInitializeELMOTargetMC() {
     WithColor::note() << "InitTargetMC\n";
 
     RegisterMCAsmInfoFn X(getTheELMOTarget(),createELMOMCAsmInfo);
