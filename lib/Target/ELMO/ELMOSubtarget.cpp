@@ -15,10 +15,10 @@ ELMOSubtarget &ELMOSubtarget::init(StringRef CPU, StringRef FS) {
   return *this;
 }
 
-ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS,const TargetMachine & TM)
-    : ELMOGenSubtargetInfo(TT, CPU, FS) , InstrInfo(init(CPU,FS)), TLInfo(TM,*this),FrameLowering(*this)
-)
-{
+ELMOSubtarget::ELMOSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
+                             const TargetMachine &TM)
+    : ELMOGenSubtargetInfo(TT, CPU, FS), InstrInfo(init(CPU, FS)),
+      FrameLowering(*this), TLInfo(TM, *this) {
 
   std::string CPUName = "generic";
 

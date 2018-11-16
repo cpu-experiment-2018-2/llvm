@@ -5,10 +5,10 @@
 #include "llvm/CodeGen/TargetFrameLowering.h"
 
 namespace llvm {
-class ELMOSubTarget;
+class ELMOSubtarget;
 class ELMOFrameLowering : public TargetFrameLowering {
 public:
-  explicit ELMOFrameLowering(const ELMOSubTarget &ST);
+  ELMOFrameLowering(ELMOSubtarget &);
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 

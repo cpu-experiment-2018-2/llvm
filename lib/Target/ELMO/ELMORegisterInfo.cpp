@@ -25,4 +25,10 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MI,
 unsigned ELMORegisterInfo::getFrameRegister(const MachineFunction &m) const {
   return ELMO::FP;
 };
+
+BitVector ELMORegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+  BitVector Reserved(getNumRegs());
+  const ELMOSubtarget &Subtarget = MF.getSubtarget<ELMOSubtarget>();
+  return Reserved;
+}
 }

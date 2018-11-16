@@ -27,5 +27,21 @@ class BinOp<bits<6> opcode, string opstr, SDNode opnode>
 }
 def ADD  : BinOp<0b000000, "add", add>;
 def SUB  : BinOp<0b000001, "sub", sub>;
-def AND  : BinOp<0b010000, "and", and>;
-def OR   : BinOp<0b010001, "or", or>;
+
+
+class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>
+   : InstELMO<outs, ins, asmstr, pattern> {
+  let isCodeGenOnly = 1;
+  let isPseudo = 1;
+}
+def SDT_ELMOCall         : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
+
+def Call : SDNode<"ELMOISD::CALL", SDT_ELMOCall,
+                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
+                               SDNPVariadic]>;
+
+
+let isCall = 1, Uses = [SP] in {
+  def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(Call ELMOGRRegs:$Rs1)]>;
+}
+

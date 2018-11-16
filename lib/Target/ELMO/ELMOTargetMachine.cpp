@@ -22,6 +22,7 @@ ELMOTargetMachine::ELMOTargetMachine(const llvm::Target &T,
                                      llvm::CodeGenOpt::Level lv, bool JIT)
     : LLVMTargetMachine(T, layout, TT, CPU, FS, Options, Reloc::Static,
                         CodeModel::Small, lv),
+      Subtarget(TT, CPU, FS, *this),
       TLOF(make_unique<ELMOELFTargetObjectFile>()) {
   WithColor::note() << "ELMOTargetmachine was called\n";
   initAsmInfo();

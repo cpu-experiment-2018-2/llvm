@@ -65,6 +65,11 @@ static MCInstPrinter *createELMOMCInstPrinter(const Triple &T,
                                                const MCRegisterInfo &MRI) {
     return new ELMOInstPrinter(MAI, MII, MRI);
 }
+
+static MCSubtargetInfo *
+createELMOMCSubtargetInfo(const Triple&TT,StringRef CPU,StringRef FS){
+return createELMOMCSubtargetInfoImpl(TT,CPU,FS);
+}
 extern "C" void LLVMInitializeELMOTargetMC() {
     WithColor::note() << "InitTargetMC\n";
 
@@ -78,4 +83,6 @@ TargetRegistry::RegisterMCInstrInfo(getTheELMOTarget(),
 TargetRegistry::RegisterMCRegInfo(getTheELMOTarget(),
         createELMOMCRegisterInfo);
 TargetRegistry::RegisterMCInstPrinter(getTheELMOTarget(), createELMOMCInstPrinter);
+
+TargetRegistry::RegisterMCSubtargetInfo(getTheELMOTarget(),createELMOMCSubtargetInfo );
 }

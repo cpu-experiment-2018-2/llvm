@@ -8,6 +8,7 @@
 namespace llvm {
 class ELMOTargetMachine : public LLVMTargetMachine {
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
+  ELMOSubtarget Subtarget;
 
 public:
   ELMOTargetMachine(const llvm::Target &T, const llvm::Triple &TT,
@@ -18,6 +19,10 @@ public:
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();
+  }
+
+  const ELMOSubtarget *getSubtargetImpl(const llvm::Function &) const override {
+    return &Subtarget;
   }
 };
 }
