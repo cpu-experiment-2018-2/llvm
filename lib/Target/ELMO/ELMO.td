@@ -34,5 +34,3 @@ def ELMO : Target {
   let AssemblyWriters = [ELMOInstPrinter];
   let AllowRegisterRenaming = 1;
 }
-
-
