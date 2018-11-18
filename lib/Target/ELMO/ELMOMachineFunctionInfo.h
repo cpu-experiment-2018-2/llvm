@@ -4,10 +4,11 @@
 #include "llvm/CodeGen/MachineFunction.h"
 namespace llvm {
 class ELMOMachineFunctionInfo : public MachineFunctionInfo {
-  MachineFunction &MF;
+  // MachineFunction &MF;
 
 public:
-  explicit ELMOMachineFunctionInfo(MachineFunction &MF) : MF(MF) {}
+  ELMOMachineFunctionInfo() {}
+  explicit ELMOMachineFunctionInfo(MachineFunction &MF) {}
   virtual void anchor();
 };
 }

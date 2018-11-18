@@ -20,10 +20,14 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
 
 MachineBasicBlock::iterator ELMOFrameLowering::eliminateCallFramePseudoInstr(
     llvm::MachineFunction &MF, llvm::MachineBasicBlock &MBB,
-    llvm::MachineBasicBlock::iterator I) const {}
+    llvm::MachineBasicBlock::iterator I) const {
+  return I;
+}
 bool ELMOFrameLowering::hasReservedCallFrame(
-    const llvm::MachineFunction &MF) const {}
-bool ELMOFrameLowering::hasFP(const MachineFunction &MF) const {}
+    const llvm::MachineFunction &MF) const {
+  return false;
+}
+bool ELMOFrameLowering::hasFP(const MachineFunction &MF) const { return false; }
 void ELMOFrameLowering::determineCalleeSaves(llvm::MachineFunction &MF,
                                              llvm::BitVector &SavedRegs,
                                              llvm::RegScavenger *RS) const {}

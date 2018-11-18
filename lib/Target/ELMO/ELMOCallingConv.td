@@ -8,4 +8,6 @@ def RetCC_ELMO : CallingConv<[
     CCIfType<[i32,f32], CCAssignToReg<[G3]>>
 ]>;
 
-
+def CSR : CalleeSavedRegs<(add)> {
+  let OtherPreserved = (add G29);
+}

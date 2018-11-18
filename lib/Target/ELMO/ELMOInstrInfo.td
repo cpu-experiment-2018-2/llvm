@@ -36,12 +36,12 @@ class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>
 }
 def SDT_ELMOCall         : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
 
-def Call : SDNode<"ELMOISD::CALL", SDT_ELMOCall,
-                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
-                               SDNPVariadic]>;
-
-
-let isCall = 1, Uses = [SP] in {
-  def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(Call ELMOGRRegs:$Rs1)]>;
-}
-
+/* def Call : SDNode<"ELMOISD::CALL", SDT_ELMOCall, */
+/*                               [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue, */
+/*                                SDNPVariadic]>; */
+/*  */
+/*  */
+/* let isCall = 1, Uses = [SP] in { */
+/*   def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(Call ELMOGRRegs:$Rs1)]>; */
+/* } */
+/*  */

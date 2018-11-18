@@ -39,6 +39,7 @@ public:
   const SelectionDAGTargetInfo *getSelectionDAGInfo() const override {
     return &TSInfo;
   }
+  const ELMOInstrInfo *getInstrInfo() const override { return &InstrInfo; }
 };
 }
 
