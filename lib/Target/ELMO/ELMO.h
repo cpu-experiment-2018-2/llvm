@@ -8,6 +8,8 @@
 namespace llvm {
 class ELMOTargetMachine;
 class FunctionPass;
+
+FunctionPass *createELMOISelDag(ELMOTargetMachine &TM);
 } // end namespace llvm;
 
 #endif

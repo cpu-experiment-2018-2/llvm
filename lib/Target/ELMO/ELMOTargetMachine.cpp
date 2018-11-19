@@ -50,11 +50,11 @@ ELMOTargetMachine::createPassConfig(llvm::PassManagerBase &PM) {
   return new ELMOPassConfig(*this, PM);
 }
 void ELMOPassConfig::addIRPasses() {
-  // addPass(createAtomicExpandPass());
+  addPass(createAtomicExpandPass());
   TargetPassConfig::addIRPasses();
 }
 bool ELMOPassConfig::addInstSelector() {
-  // addPass(createELMOIselDag(getELMOTargetMachine()));
+  addPass(createELMOISelDag(getELMOTargetMachine()));
   return false;
 }
 void ELMOPassConfig::addPreEmitPass() {}

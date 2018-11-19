@@ -1,3 +1,6 @@
+
+def SDT_ELMORet : SDTypeProfile < 0, 1, [SDTCisInt<0>]>;
+
 class InstELMO<dag outs, dag ins, string asmstr, list<dag> pattern>
     : Instruction {
   field bits<32> Inst;
@@ -27,6 +30,7 @@ class BinOp<bits<6> opcode, string opstr, SDNode opnode>
 }
 def ADD  : BinOp<0b000000, "add", add>;
 def SUB  : BinOp<0b000001, "sub", sub>;
+
 
 
 class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>

@@ -9,5 +9,5 @@ def RetCC_ELMO : CallingConv<[
 ]>;
 
 def CSR : CalleeSavedRegs<(add)> {
-  let OtherPreserved = (add G29);
+  let OtherPreserved = (add LK, FP);
 }
