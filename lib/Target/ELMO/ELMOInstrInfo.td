@@ -18,9 +18,22 @@ class InstELMO<dag outs, dag ins, string asmstr, list<dag> pattern>
   let Pattern = pattern;
   let Size = 4;
 }
+
+class ItinInst<bits<6> opcode, dag outs, dag ins, string asmstr,list<dag> pattern, InstrItinClass itin>: InstELMO<outs, ins, asmstr, pattern> {
+    let Inst{31-26} = opcode;
+}
+
 class ALUInst<bits<6> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
     : InstELMO<outs, ins, asmstr, pattern> {
   let Inst{31-26} = opcode;
+}
+
+
+
+def mem : Operand<i32> {
+      let PrintMethod = "printMemOperand";
+      let MIOperandInfo = (ops ELMOGRRegs, i16imm);
+      let EncoderMethod = "getMemEncoding";
 }
 
 // Return
@@ -32,6 +45,37 @@ class RetInst<bits<6> op, string asmstr>:
   let isBarrier=1;
   let isReturn=1;
 }
+
+class DForm<bits<6> opcode, string opstr, SDNode opnode > 
+:ALUInst<opcode, (outs ELMOGRRegs:$dst),
+                   (ins ELMOGRRegs:$src1, mem:$imm),
+                   !strconcat(opstr, " $dst, $src, $imm"),
+                   [(set i32:$dst, (opnode i32:$src, imm:$imm))]> {
+    bits<5> dst;
+    bits<5> src;
+    bits<16> imm;
+    let Inst{15-0} = imm;
+    let Inst{20-16} = src;
+    let Inst{25-21} = dst;
+    let DecoderMethod = "DecodeMoveTarget";
+}
+
+class XForm<bits<6> opcode, string opstr, SDNode opnode > : ALUInst<opcode, (outs ELMOGRRegs:$dst),
+                   (ins ELMOGRRegs:$src1, ELMOGRRegs:$src2),
+                   !strconcat(opstr, " $dst, $src1, $src2"),
+                   [(set i32:$dst, (opnode i32:$src, i32:$src2))]> {
+
+    bits<5> dst;
+    bits<5> src1;
+    bits<5> src2;
+
+    let Inst{15-11} = src2;
+    let Inst{20-16} = src1;
+    let Inst{25-21} = dst;
+}
+
+
+
 
 
 class BinOp<bits<6> opcode, string opstr, SDNode opnode> 
@@ -49,6 +93,7 @@ class BinOp<bits<6> opcode, string opstr, SDNode opnode>
 def ADD  : BinOp<0b000000, "add", add>;
 def SUB  : BinOp<0b000001, "sub", sub>;
 def BLR  : RetInst<0b000010, "blr">; 
+/* def LOAD  : DForm<0b000011, "load", load>;  */
 
 
 class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>

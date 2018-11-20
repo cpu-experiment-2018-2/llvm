@@ -29,4 +29,47 @@ void ELMOInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       .addReg(SourceRegister, getKillRegState(KillSource))
       .addReg(ELMO::ZERO);
 }
+void ELMOInstrInfo::loadRegFromStackSlot(
+    llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator Position,
+    unsigned DestinationRegister, int FrameIndex,
+    const llvm::TargetRegisterClass *RegisterClass,
+    const llvm::TargetRegisterInfo *RegisterInfo) const {
+
+  DebugLoc dl;
+  if (Position != MBB.end()) {
+    dl = Position->getDebugLoc();
+  }
+  MachineFunction *MF = MBB.getParent();
+  MachineFrameInfo &MFI = MF->getFrameInfo();
+
+  MachineMemOperand *MMO = MF->getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(*MF, FrameIndex),
+      MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIndex),
+      MFI.getObjectAlignment(FrameIndex));
+
+  // BuildMI(MBB, Position, dl, get(ELMO::LOAD))
+  //         .addReg(DestinationRegister)
+  //         .addFrameIndex(FrameIndex).addImm(0).addMemOperand(MMO);
+}
+void ELMOInstrInfo::storeRegToStackSlot(
+    llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator Position,
+    unsigned SourceRegister, bool IsKill, int FrameIndex,
+    const llvm::TargetRegisterClass *RegisterClass,
+    const llvm::TargetRegisterInfo *RegisterInfo) const {
+  DebugLoc dl;
+  if (Position != MBB.end()) {
+    dl = Position->getDebugLoc();
+  }
+  MachineFunction *MF = MBB.getParent();
+  MachineFrameInfo &MFI = MF->getFrameInfo();
+
+  MachineMemOperand *MMO = MF->getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(*MF, FrameIndex),
+      MachineMemOperand::MOStore, MFI.getObjectSize(FrameIndex),
+      MFI.getObjectAlignment(FrameIndex));
+
+  // BuildMI(MBB, Position, dl, get(ELMO::STORE))
+  //         .addReg(SourceRegister, getKillRegState(IsKill))
+  //         .addFrameIndex(FrameIndex).addImm(0).addMemOperand(MMO);
+}
 }

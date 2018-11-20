@@ -24,6 +24,19 @@ public:
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
                    const DebugLoc &DL, unsigned DestinationRegister,
                    unsigned SourceRegister, bool KillSource) const override;
+  void
+  storeRegToStackSlot(MachineBasicBlock &MBB,
+                      MachineBasicBlock::iterator Position,
+                      unsigned SourceRegister, bool IsKill, int FrameIndex,
+                      const TargetRegisterClass *RegisterClass,
+                      const TargetRegisterInfo *RegisterInfo) const override;
+
+  void
+  loadRegFromStackSlot(MachineBasicBlock &MBB,
+                       MachineBasicBlock::iterator Position,
+                       unsigned DestinationRegister, int FrameIndex,
+                       const TargetRegisterClass *RegisterClass,
+                       const TargetRegisterInfo *RegisterInfo) const override;
 };
 } // end namespace llvm
 
