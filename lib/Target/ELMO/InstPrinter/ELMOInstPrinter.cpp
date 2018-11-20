@@ -15,7 +15,17 @@ using namespace llvm;
 
 #include "ELMOGenAsmWriter.inc"
 void ELMOInstPrinter::printOperand(const MCInst *MI, int opNum,
-                                   raw_ostream &OS) {}
+                                   raw_ostream &OS) {
+  const MCOperand &Op = MI->getOperand(opNum);
+  if (Op.isReg()) {
+    printRegName(OS, Op.getReg());
+  } else if (Op.isImm()) {
+    OS << Op.getImm();
+  } else {
+    assert(Op.isExpr() && "unknown operand kind in printOperand");
+    OS << *Op.getExpr();
+  }
+}
 void ELMOInstPrinter::printMemOperand(const MCInst *MI, int opNum,
                                       raw_ostream &OS, const char *Modifier) {}
 void ELMOInstPrinter::printCCOperand(const MCInst *MI, int opNum,
@@ -25,8 +35,12 @@ bool ELMOInstPrinter::printGetPCX(const MCInst *MI, unsigned OpNo,
 
 void ELMOInstPrinter::printRegName(llvm::raw_ostream &OS,
                                    unsigned RegNo) const {
-  OS << "%r" << RegNo;
+  OS << "%" << StringRef(getRegisterName(RegNo)).lower();
 }
+
 void ELMOInstPrinter::printInst(const llvm::MCInst *MI, llvm::raw_ostream &OS,
                                 llvm::StringRef Annot,
-                                const llvm::MCSubtargetInfo &STI) {}
+                                const llvm::MCSubtargetInfo &STI) {
+  printInstruction(MI, OS);
+  printAnnotation(OS, Annot);
+}

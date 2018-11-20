@@ -29,7 +29,7 @@ add_llvm_target(ELMOCodeGen
   # ELMOFastISel.cpp
   ELMOFrameLowering.cpp
   # ELMOLoopPreIncPrep.cpp
-  # ELMOMCInstLower.cpp
+  ELMOMCInstLower.cpp
   ELMOMachineFunctionInfo.cpp
   # ELMOMIPeephole.cpp
   ELMORegisterInfo.cpp
