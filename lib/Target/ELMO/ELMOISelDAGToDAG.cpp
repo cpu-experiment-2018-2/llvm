@@ -30,6 +30,7 @@ private:
 void ELMODAGToDAGISel::Select(SDNode *N) {
   WithColor::note() << "Selected\n";
   SelectCode(N);
+  WithColor::note() << "Select end\n";
 }
 FunctionPass *llvm::createELMOISelDag(ELMOTargetMachine &TM) {
   return new ELMODAGToDAGISel(TM);

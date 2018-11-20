@@ -19,4 +19,14 @@ namespace llvm {
 void ELMOInstrInfo::anchor() {}
 
 ELMOInstrInfo::ELMOInstrInfo(ELMOSubtarget &ST) : ST(ST) {}
+void ELMOInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator Position,
+                                const DebugLoc &DL,
+                                unsigned DestinationRegister,
+                                unsigned SourceRegister,
+                                bool KillSource) const {
+  BuildMI(MBB, Position, DL, get(ELMO::ADD), DestinationRegister)
+      .addReg(SourceRegister, getKillRegState(KillSource))
+      .addReg(ELMO::ZERO);
+}
 }

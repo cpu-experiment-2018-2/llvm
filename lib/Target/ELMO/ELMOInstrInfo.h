@@ -13,13 +13,18 @@ class ELMOSubtarget;
 class ELMOInstrInfo : public ELMOGenInstrInfo {
   const ELMORegisterInfo RI;
   const ELMOSubtarget &ST;
+
   virtual void anchor();
 
 public:
   ELMOInstrInfo(ELMOSubtarget &ST);
-  const ELMORegisterInfo &getRegisterInfo() const { return RI; }
-};
 
+  const ELMORegisterInfo &getRegisterInfo() const { return RI; }
+
+  void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
+                   const DebugLoc &DL, unsigned DestinationRegister,
+                   unsigned SourceRegister, bool KillSource) const override;
+};
 } // end namespace llvm
 
 #endif

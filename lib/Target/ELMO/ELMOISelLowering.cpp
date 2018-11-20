@@ -26,7 +26,12 @@ SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
 }
 
 const char *ELMOTargetLowering::getTargetNodeName(unsigned Opcode) const {
-  return NULL;
+  switch (Opcode) {
+  case ELMOISD::Ret:
+    return "ELMOISD::Ret";
+  default:
+    return nullptr;
+  }
 }
 
 SDValue ELMOTargetLowering::LowerReturn(
@@ -53,23 +58,6 @@ SDValue ELMOTargetLowering::LowerReturn(
     RetOps.push_back(Flag);
   }
   return DAG.getNode(ELMOISD::Ret, dl, MVT::Other, RetOps);
-  /*
-    for(unsigned i =0;i!=RVLocs.size();++i){
-      CCValAssign &VA = RVLocs[i];
-      assert(VA.isRegLoc() && "Can only return in regs!");
-
-      Chain = DAG.getCopyToReg(Chain, DL, VA.getLocReg(), OutVals[i],Flag);
-      Flag = Chain.getValue(1);
-
-      RetOps.push_back(DAG.getRegister(VA.getLocReg(),VA.getLocVT()));
-    }
-    if(DAG.getMachineFunction().getFunction().hasStructRetAttr()){
-      MachineFunction&MF = DAG.getMachineFunction();
-      ELMOMachineFunctionInfo * ELMOMFI = MF.getInfo<ELMOMachineFunctionInfo>();
-      unsigned Reg = 3;// hard cording
-
-    }
-    */
 }
 
 SDValue ELMOTargetLowering::LowerCallResult(

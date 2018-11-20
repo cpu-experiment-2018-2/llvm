@@ -1,5 +1,11 @@
 
 def SDT_ELMORet : SDTypeProfile < 0, 1, [SDTCisInt<0>]>;
+def ELMORet : SDNode < "ELMOISD::Ret", SDT_ELMORet,
+    [SDNPHasChain, SDNPOptInGlue,SDNPVariadic]>;
+def SDT_ELMOCall : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
+def ELMOCall : SDNode < "ELMOISD::Call", SDT_ELMOCall,
+    [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,SDNPVariadic]>;
+
 
 class InstELMO<dag outs, dag ins, string asmstr, list<dag> pattern>
     : Instruction {
@@ -16,6 +22,18 @@ class ALUInst<bits<6> opcode, dag outs, dag ins, string asmstr, list<dag> patter
     : InstELMO<outs, ins, asmstr, pattern> {
   let Inst{31-26} = opcode;
 }
+
+// Return
+class RetInst<bits<6> op, string asmstr>:
+  ALUInst<op, (outs), (ins ELMOGRRegs:$rc),
+     asmstr, [(ELMORet ELMOGRRegs:$rc)] > {
+  let isBranch=1;
+  let isTerminator=1;
+  let isBarrier=1;
+  let isReturn=1;
+}
+
+
 class BinOp<bits<6> opcode, string opstr, SDNode opnode> 
   :ALUInst<opcode, (outs ELMOGRRegs:$dst),
                    (ins ELMOGRRegs:$src1, ELMOGRRegs:$src2),
@@ -30,7 +48,7 @@ class BinOp<bits<6> opcode, string opstr, SDNode opnode>
 }
 def ADD  : BinOp<0b000000, "add", add>;
 def SUB  : BinOp<0b000001, "sub", sub>;
-
+def BLR  : RetInst<0b000010, "blr">; 
 
 
 class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>
@@ -38,14 +56,3 @@ class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>
   let isCodeGenOnly = 1;
   let isPseudo = 1;
 }
-def SDT_ELMOCall         : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
-
-/* def Call : SDNode<"ELMOISD::CALL", SDT_ELMOCall, */
-/*                               [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue, */
-/*                                SDNPVariadic]>; */
-/*  */
-/*  */
-/* let isCall = 1, Uses = [SP] in { */
-/*   def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(Call ELMOGRRegs:$Rs1)]>; */
-/* } */
-/*  */
