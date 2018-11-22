@@ -43,6 +43,7 @@ let Namespace = "ELMO" in {
   def G29   : ELMOGPRReg<29,  "r29">,    DwarfRegNum<[29]>;
   def G30   : ELMOGPRReg<30,  "r30">,    DwarfRegNum<[30]>;
   def LK   : ELMOGPRReg<31,  "lk">,    DwarfRegNum<[31]>;
+  def C   : ELMOGPRReg<32,  "cond">,    DwarfRegNum<[31]>;
 }
 
 //===----------------------------------------------------------------------===//
@@ -53,3 +54,5 @@ def ELMOGRRegs : RegisterClass<"ELMO", [i32], 32,
                             (add ZERO, FP, SP,
                                  (sequence "G%u", 3, 30),
                                  LK)>;
+
+def COND: RegisterClass<"ELMO",[i32],32, (add C)>;

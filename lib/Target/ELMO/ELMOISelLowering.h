@@ -6,7 +6,7 @@
 
 namespace llvm {
 namespace ELMOISD {
-enum NodeType { FIRST_NUMBER = ISD::BUILTIN_OP_END, Call, Ret };
+enum NodeType { FIRST_NUMBER = ISD::BUILTIN_OP_END, Call, Ret , BR_CC};
 }
 class ELMOSubtarget;
 class ELMOFunctionInfo;
