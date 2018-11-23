@@ -107,7 +107,7 @@ class CBranch<bits<6> op, string instr_asm, RegisterClass RC,
   let DecoderMethod = "DecodeBranchTarget";
 }
 
-class CmpInstr<bits<8> op, string instr_asm, 
+class CmpInstr<bits<6> op, string instr_asm, 
                InstrItinClass itin, RegisterClass RC, RegisterClass RD, 
                bit isComm = 0>:
   FA<op, (outs RD:$rc), (ins RC:$ra, RC:$rb),
@@ -122,6 +122,9 @@ def JLT     : CBranch<0x12, "jlt", COND, [G29]>;
 def JGT     : CBranch<0x13, "jgt", COND, [G29]>;
 def JLE     : CBranch<0x14, "jle", COND, [G29]>;
 def JGE     : CBranch<0x15, "jge", COND, [G29]>;
+def CMP     : CmpInstr<0x16, "cmpd",IIBranch, COND,ELMOGRRegs, 0>;
+
+
 
 // brcond patterns
 multiclass BrcondPats<RegisterClass RC, Instruction JEQOp, Instruction JNEOp, 
