@@ -14,9 +14,22 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
                                        const ELMOSubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
   addRegisterClass(MVT::i32, &ELMO::ELMOGRRegsRegClass);
-  setMinFunctionAlignment(2);
-  setStackPointerRegisterToSaveRestore(ELMO::SP);
+
   computeRegisterProperties(STI.getRegisterInfo());
+  setStackPointerRegisterToSaveRestore(ELMO::SP);
+  setBooleanContents(ZeroOrOneBooleanContent);
+  setBooleanVectorContents(ZeroOrNegativeOneBooleanContent);
+  // AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
+
+  setOperationAction(ISD::BR_CC, MVT::i32, Expand);
+
+  //  setTargetDAGCombine(ISD::BR_CC);
+  for (MVT VT : MVT::integer_valuetypes()) {
+    setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Promote);
+    setLoadExtAction(ISD::ZEXTLOAD, VT, MVT::i1, Promote);
+    setLoadExtAction(ISD::SEXTLOAD, VT, MVT::i1, Promote);
+  }
+  setMinFunctionAlignment(2);
 }
 SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
                                            llvm::SelectionDAG &DAG) const {
