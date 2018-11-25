@@ -4,8 +4,9 @@
 using namespace llvm;
 
 Target &llvm::getTheELMOTarget() {
-    static Target TheELMOTarget;
-    return TheELMOTarget; }
+  static Target TheELMOTarget;
+  return TheELMOTarget;
+}
 extern "C" void LLVMInitializeELMOTargetInfo() {
   RegisterTarget<Triple::elmo,
                  /*HasJIT=*/false>

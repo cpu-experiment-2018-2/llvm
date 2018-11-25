@@ -5,8 +5,25 @@ def IICStore  : InstrItinClass;
 def IIBranch  : InstrItinClass;
 def IIAlu  : InstrItinClass;
 
+def SDT_ELMOCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>,
+                                            SDTCisVT<1, i32>]>;
+def SDT_ELMOCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>,
+                                          SDTCisVT<1, i32>]>;
+def CallSeqStart     : SDNode<"ISD::CALLSEQ_START", SDT_ELMOCallSeqStart,
+                              [SDNPHasChain, SDNPOutGlue]>;
+def CallSeqEnd       : SDNode<"ISD::CALLSEQ_END", SDT_ELMOCallSeqEnd,
+                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 
 
+
+def SDT_ELMOSetFlag      : SDTypeProfile<0,  2, [SDTCisSameAs<0, 1>]>;
+def ELMOSetFlag     : SDNode<"ELMOISD::SET_FLAG", SDT_ELMOSetFlag,
+                              [SDNPOutGlue]>;
+def SDT_ELMOSelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
+                                                 SDTCisSameAs<1, 2>
+                                                 ]>;
+def ELMOSelectCC     : SDNode<"ELMOISD::SELECT_CC", SDT_ELMOSelectCC,
+                          [SDNPInGlue]>;
 def SDT_ELMORet : SDTypeProfile < 0, 1, [SDTCisInt<0>]>;
 def SDT_ELMOBrCC : SDTypeProfile<0,  2, [SDTCisVT<0, OtherVT>,
                                                   SDTCisVT<1, i32>]>;
@@ -23,8 +40,13 @@ def ELMOBrCC        : SDNode<"ELMOISD::BR_CC", SDT_ELMOBrCC,
 
 
 def ELMOCall : SDNode < "ELMOISD::Call", SDT_ELMOCall,
-    [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,SDNPVariadic]>;
+                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
+                               SDNPVariadic]>;
 
+
+def CCOp : Operand<i32> {
+  let PrintMethod = "printCCOperand";
+}
 
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
@@ -53,6 +75,14 @@ class ArithLogicR<bits<6> op, string instr_asm, SDNode OpNode,
 }
 
 
+
+
+def simm16      : Operand<i32> {
+  let DecoderMethod= "DecodeSimm16";
+}
+def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
+def ADDiu   : ArithLogicI<0x09, "addi", add, simm16, immSExt16, ELMOGRRegs>;
+def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>;
 
 def mem : Operand<i32> {
       let PrintMethod = "printMemOperand";
@@ -154,9 +184,11 @@ def : Pat<(brcond (i32 (setge RC:$lhs, RC:$rhs)), bb:$dst),
           (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
 def : Pat<(brcond (i32 (setuge RC:$lhs, RC:$rhs)), bb:$dst),
           (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-
 def : Pat<(brcond RC:$cond, bb:$dst),
           (JNEOp (CMPOp RC:$cond, ZEROReg), bb:$dst)>;
+def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ),
+            (CMP RC:$lhs, RC:$rhs)>;
+
 }
 
 defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
@@ -166,6 +198,77 @@ defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
 /*  */
 
 
+let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 in {
+  let Uses = [G29] in
+    def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
+                      "b$DDDI\t$addr",
+                      [(ELMOBrCC bb:$addr, imm:$DDDI)],
+	IIBranch
+>;
+}
+
+
+
 let isReturn = 1,isBranch = 1, isTerminator=1, isBarrier = 1 in  
 def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRRegs:$rc)] , IIBranch> ;
+multiclass SetltPats<RegisterClass RC> {
+  def : Pat<(setlt RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
+//          (XORi (ANDi (SHR (CMP RC:$lhs, RC:$rhs), (LUi 0x8000), 31), 1), 1)>;
+  def : Pat<(setult RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
+}
+
+defm : SetltPats<ELMOGRRegs>;
+
+multiclass SeteqPats<RegisterClass RC> {
+  def : Pat<(seteq RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
+  def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ),
+            (CMP RC:$lhs, RC:$rhs)>;
+}
+
+defm : SeteqPats<ELMOGRRegs>;
+
+/* let usesCustomInserter = 1 in */
+/* class SelectCC_rrirr<RegisterClass valty, RegisterClass cmpty,string asmstr> */
+/*     : Pseudo<(outs valty:$dst), */
+/*              (ins cmpty:$lhs, cmpty:$rhs, */
+/*               valty:$truev, valty:$falsev, CCOp:$imm), */
+/*               asmstr, */
+/*              [(set valty:$dst, (SelectCC cmpty:$lhs, cmpty:$rhs,imm:$imm, valty:$truev, valty:$falsev))] */
+/*               ,IIBranch>; */
+/*  */
+/* def Select_GPR_Using_CC_GPR : SelectCC_rrirr<ELMOGRRegs, ELMOGRRegs,"select">; */
+/*  */
+
+def SET_FLAG : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
+                      "cmp",
+                      [(ELMOSetFlag (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2))],
+                      IIBranch
+                      >;
+
+
+/* let Defs = [SP], Uses = [SP] in { */
+  def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
+                                "#ADJCALLSTACKDOWN $amt1 $amt2",
+                                [(CallSeqStart timm:$amt1, timm:$amt2)], IIBranch>;
+  def ADJCALLSTACKUP   : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
+                                "#ADJCALLSTACKUP $amt1 $amt2",
+                                [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>;
+/* } */
+
+def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
+						  (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2, CCOp:$DDDI),
+                          "select",
+						  [(set (i32 ELMOGRRegs:$Rd),
+						   (ELMOSelectCC (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2),
+										  (imm:$DDDI)))],
+	IIBranch
+>; 
+let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1, Uses = [SP] in {
+/*     Defs = [RCA] in { */
+def CALL : Pseudo<(outs), (ins brtarget:$addr), "", [], IIBranch>;
+def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+} 
 

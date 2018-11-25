@@ -6,7 +6,14 @@
 
 namespace llvm {
 namespace ELMOISD {
-enum NodeType { FIRST_NUMBER = ISD::BUILTIN_OP_END, Call, Ret , BR_CC};
+enum NodeType {
+  FIRST_NUMBER = ISD::BUILTIN_OP_END,
+  Call,
+  Ret,
+  BR_CC,
+  SELECT_CC,
+  SET_FLAG
+};
 }
 class ELMOSubtarget;
 class ELMOFunctionInfo;
@@ -30,6 +37,8 @@ public:
                           const llvm::SmallVectorImpl<ISD::InputArg> &Ins,
                           const llvm::SDLoc &dl, llvm::SelectionDAG &DAG,
                           SmallVectorImpl<SDValue> &InVals) const;
+  SDValue lowerSelect(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
                                bool isVarArg,

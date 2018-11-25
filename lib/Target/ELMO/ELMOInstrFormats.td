@@ -122,6 +122,7 @@ class FI<bits<6> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 /*  */
 /*     bits<5> dst; */
 /*     bits<5> src1; */
+
 /*     bits<5> src2; */
 /*  */
 /*     let Inst{15-11} = src2; */
@@ -145,3 +146,9 @@ class FI<bits<6> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 /*     let Inst{20-16} = src1; */
 /*     let Inst{15-11} = src2; */
 /* } */
+class Pseudo<dag outs, dag ins, string opcodestr,list<dag> pattern, InstrItinClass itin >
+    : ELMOInst<outs, ins, opcodestr,  pattern, itin> {
+          let isPseudo = 1;
+          let isCodeGenOnly = 1;
+    }
+
