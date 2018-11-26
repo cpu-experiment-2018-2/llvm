@@ -19,6 +19,7 @@ struct ELMORegisterInfo : public ELMOGenRegisterInfo {
   void eliminateFrameIndex(MachineBasicBlock::iterator, int, unsigned,
                            RegScavenger *) const override;
   unsigned getFrameRegister(const MachineFunction &) const override;
+  bool isConstantPhysReg(unsigned PhysReg) const override;
 };
 }
 #endif

@@ -8,8 +8,14 @@
 namespace llvm {
 class ELMOTargetMachine;
 class FunctionPass;
+class AsmPrinter;
+class MCInst;
+class MachineInstr;
 
 FunctionPass *createELMOISelDag(ELMOTargetMachine &TM);
+void LowerELMOMachineInstrToMCInst(const MachineInstr *MI, MCInst &OutMI,
+                                   AsmPrinter &AP);
+
 } // end namespace llvm;
 
 #endif

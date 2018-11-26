@@ -1,6 +1,6 @@
 #include "ELMO.h"
 #include "ELMOInstrInfo.h"
-#include "ELMOMCInstLower.h"
+//#include "ELMOMCInstLower.h"
 #include "ELMOTargetMachine.h"
 #include "InstPrinter/ELMOInstPrinter.h"
 #include "llvm/CodeGen/AsmPrinter.h"
@@ -95,11 +95,11 @@ public:
 //                                      {}
 // void ELMOAsmPrinter::EmitFunctionBodyStart() {}
 void ELMOAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-  ELMOMCInstLower MCInstLowering(OutContext, *this);
+  // ELMOMCInstLower MCInstLowering(OutContext, *this);
   MCSubtargetInfo STI = getSubtargetInfo();
   MI->dump();
   MCInst TmpInst;
-  MCInstLowering.Lower(MI, TmpInst);
+  LowerELMOMachineInstrToMCInst(MI, TmpInst, *this);
   OutStreamer->EmitInstruction(TmpInst, STI);
 }
 // bool ELMOAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,

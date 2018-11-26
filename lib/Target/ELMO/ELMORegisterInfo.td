@@ -54,5 +54,10 @@ def ELMOGRRegs : RegisterClass<"ELMO", [i32], 32,
                             (add ZERO, FP, SP,
                                  (sequence "G%u", 3, 30),
                                  LK)>;
+def ELMOGRFRegs : RegisterClass<"ELMO", [f32], 32,
+                            (add ZERO, FP, SP,
+                                 (sequence "G%u", 3, 30),
+                                 LK)>;
+
 
 def COND: RegisterClass<"ELMO",[i32],32, (add C)>;

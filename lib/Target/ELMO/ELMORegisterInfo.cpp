@@ -25,9 +25,17 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MI,
 unsigned ELMORegisterInfo::getFrameRegister(const MachineFunction &m) const {
   return ELMO::FP;
 };
+bool ELMORegisterInfo::isConstantPhysReg(unsigned PhysReg) const {
+  return PhysReg == ELMO::ZERO;
+}
 
 BitVector ELMORegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
+  markSuperRegs(Reserved, ELMO::LK);
+  markSuperRegs(Reserved, ELMO::SP);
+  markSuperRegs(Reserved, ELMO::FP);
+  markSuperRegs(Reserved, ELMO::ZERO);
+
   const ELMOSubtarget &Subtarget = MF.getSubtarget<ELMOSubtarget>();
   return Reserved;
 }

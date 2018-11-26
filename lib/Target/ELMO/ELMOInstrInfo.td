@@ -45,8 +45,14 @@ def ELMOCall : SDNode < "ELMOISD::Call", SDT_ELMOCall,
 
 
 def CCOp : Operand<i32> {
-  let PrintMethod = "printCCOperand";
 }
+
+def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
+      // imm32SExt16 predicate - True if the i32 immediate fits in a 16-bit
+        // sign extended field.  Used by instructions like 'addi'.
+          return (int32_t)Imm == (short)Imm;
+}]>;
+
 
 def brtarget    : Operand<OtherVT> {
   let EncoderMethod = "getBranchTargetOpValue";
@@ -93,6 +99,13 @@ def mem : Operand<i32> {
 
 def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>;
 def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>;
+
+def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIAlu, ELMOGRFRegs, 1>;
+def FSUB  : ArithLogicR<0b000001, "fsub", fsub, IIAlu, ELMOGRFRegs, 0>;
+def FMUL  : ArithLogicR<0b000000, "fmul", fmul, IIAlu, ELMOGRFRegs, 1>;
+def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIAlu, ELMOGRFRegs, 0>;
+
+
 /* def BLR  : RetInst<0b000010, "blr">;  */
 /* def LOAD  : DForm<0b000011, "load", load>;  */
 
@@ -199,9 +212,8 @@ defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
 
 
 let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 in {
-  let Uses = [G29] in
     def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
-                      "b$DDDI\t$addr",
+                      "cjump $DDDI\t$addr",
                       [(ELMOBrCC bb:$addr, imm:$DDDI)],
 	IIBranch
 >;
@@ -243,20 +255,20 @@ defm : SeteqPats<ELMOGRRegs>;
 /*  */
 
 def SET_FLAG : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
-                      "cmp",
+                      "cmp $Rs1,$Rs2",
                       [(ELMOSetFlag (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2))],
                       IIBranch
                       >;
 
 
-/* let Defs = [SP], Uses = [SP] in { */
+let Defs = [SP], Uses = [SP] in {  
   def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                 "#ADJCALLSTACKDOWN $amt1 $amt2",
                                 [(CallSeqStart timm:$amt1, timm:$amt2)], IIBranch>;
   def ADJCALLSTACKUP   : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                 "#ADJCALLSTACKUP $amt1 $amt2",
                                 [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>;
-/* } */
+  }  
 
 def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
 						  (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2, CCOp:$DDDI),
@@ -266,9 +278,23 @@ def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
 										  (imm:$DDDI)))],
 	IIBranch
 >; 
-let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1, Uses = [SP] in {
-/*     Defs = [RCA] in { */
-def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl", [], IIBranch>;
-def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+def bare_symbol : Operand<OtherVT> {
+}
+let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1,  Defs = [LK] in { 
+/* def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl $addr", [], IIBranch>; */
+def PseudoCALL : Pseudo<(outs), (ins CCOp:$func),
+                        "bl $func",
+                        [(ELMOCall tglobaladdr:$func)], IIBranch>;
+def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+
+
 } 
+let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
+  def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins CCOp:$imm),
+                       "li $rD, $imm", 
+                       [(set i32:$rD, imm32SExt16:$imm)], IIAlu>;
+  /* def LIS : FJ<15, (outs ELMOGRRegs:$rD), (ins s17imm:$imm), */
+  /*                      "lis $rD, $imm", IIC_IntSimple, */
+  /*                      [(set i32:$rD, imm16ShiftedSExt:$imm)]>; */
+}
 

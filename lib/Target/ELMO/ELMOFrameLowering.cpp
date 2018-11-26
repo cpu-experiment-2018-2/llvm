@@ -66,7 +66,7 @@ bool ELMOFrameLowering::hasReservedCallFrame(
   return isInt<16>(MFI->getMaxCallFrameSize() + getStackAlignment()) &&
          !MFI->hasVarSizedObjects();
 }
-bool ELMOFrameLowering::hasFP(const MachineFunction &MF) const { return false; }
+bool ELMOFrameLowering::hasFP(const MachineFunction &MF) const { return true; }
 void ELMOFrameLowering::determineCalleeSaves(llvm::MachineFunction &MF,
                                              llvm::BitVector &SavedRegs,
                                              llvm::RegScavenger *RS) const {}

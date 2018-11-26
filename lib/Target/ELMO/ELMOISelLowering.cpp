@@ -14,6 +14,8 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
                                        const ELMOSubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
   addRegisterClass(MVT::i32, &ELMO::ELMOGRRegsRegClass);
+  addRegisterClass(MVT::f32, &ELMO::ELMOGRFRegsRegClass);
+
   // addRegisterClass(MVT::i32, &ELMO::CONDRegClass);
 
   setStackPointerRegisterToSaveRestore(ELMO::SP);
@@ -119,7 +121,7 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   bool &isTailCall = CLI.IsTailCall;
   CallingConv::ID CallConv = CLI.CallConv;
   bool isVarArg = CLI.IsVarArg;
-
+  MachineFunction &MF = DAG.getMachineFunction();
   // Sparc target does not yet support tail call optimization.
 
   // Analyze operands of the call, assigning locations to each operand.
@@ -157,11 +159,16 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
   SmallVector<SDValue, 8> Ops;
   Ops.push_back(Chain);
-  // Ops.push_back(InFlag);
+  Ops.push_back(Callee);
 
   for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
     Ops.push_back(DAG.getRegister(RegsToPass[i].first,
                                   RegsToPass[i].second.getValueType()));
+  }
+  if (!isTailCall) {
+    const TargetRegisterInfo *TRI = Subtarget->getRegisterInfo();
+    const uint32_t *Mask = TRI->getCallPreservedMask(MF, CallConv);
+    Ops.push_back(DAG.getRegisterMask(Mask));
   }
   if (InFlag.getNode())
     Ops.push_back(InFlag);
