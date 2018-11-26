@@ -25,13 +25,16 @@ public:
   ELMOMCInstLower(MCContext &CTX, AsmPrinter &AP) : Ctx(CTX), Printer(AP) {}
   void Lower(const MachineInstr *MI, MCInst &OutMI) const;
 
-  MCOperand LowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym) const;
+  MCOperand LowerOperand(const MachineOperand &MO, unsigned offset) const;
 
-  MCSymbol *GetGlobalAddressSymbol(const MachineOperand &MO) const;
-  MCSymbol *GetBlockAddressSymbol(const MachineOperand &MO) const;
-  MCSymbol *GetExternalSymbolSymbol(const MachineOperand &MO) const;
-  MCSymbol *GetJumpTableSymbol(const MachineOperand &MO) const;
-  MCSymbol *GetConstantPoolIndexSymbol(const MachineOperand &MO) const;
+  // MCOperand LowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym)
+  // const;
+
+  // MCSymbol *GetGlobalAddressSymbol(const MachineOperand &MO) const;
+  // MCSymbol *GetBlockAddressSymbol(const MachineOperand &MO) const;
+  // MCSymbol *GetExternalSymbolSymbol(const MachineOperand &MO) const;
+  // MCSymbol *GetJumpTableSymbol(const MachineOperand &MO) const;
+  // MCSymbol *GetConstantPoolIndexSymbol(const MachineOperand &MO) const;
 };
 } // namespace llvm
 #endif

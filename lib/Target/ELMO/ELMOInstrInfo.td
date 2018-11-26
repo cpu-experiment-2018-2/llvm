@@ -268,7 +268,7 @@ def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
 >; 
 let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1, Uses = [SP] in {
 /*     Defs = [RCA] in { */
-def CALL : Pseudo<(outs), (ins brtarget:$addr), "", [], IIBranch>;
-def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl", [], IIBranch>;
+def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
 } 
 

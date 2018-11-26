@@ -157,7 +157,7 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
   SmallVector<SDValue, 8> Ops;
   Ops.push_back(Chain);
-  Ops.push_back(InFlag);
+  // Ops.push_back(InFlag);
 
   for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
     Ops.push_back(DAG.getRegister(RegsToPass[i].first,
