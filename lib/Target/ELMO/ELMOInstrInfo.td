@@ -107,7 +107,15 @@ def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIAlu, ELMOGRFRegs, 0>;
 
 
 /* def BLR  : RetInst<0b000010, "blr">;  */
-/* def LOAD  : DForm<0b000011, "load", load>;  */
+let mayLoad  = 1 in
+def LOAD  : FL<0b000011, (outs ELMOGRRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
+    "load $rd, $rs1, $imm16", [], IICLoad
+>;  
+let mayStore = 1 in
+def STORE  : FL<0b000011, (outs ), (ins ELMOGRRegs:$rd, ELMOGRRegs:$rs1,simm16:$imm16),
+    "store $rd, $rs1, $imm16", [], IICStore
+>;  
+
 
 
 /* class Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern> */

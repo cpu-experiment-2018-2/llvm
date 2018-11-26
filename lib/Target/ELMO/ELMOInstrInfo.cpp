@@ -47,9 +47,11 @@ void ELMOInstrInfo::loadRegFromStackSlot(
       MachineMemOperand::MOLoad, MFI.getObjectSize(FrameIndex),
       MFI.getObjectAlignment(FrameIndex));
 
-  // BuildMI(MBB, Position, dl, get(ELMO::LOAD))
-  //         .addReg(DestinationRegister)
-  //         .addFrameIndex(FrameIndex).addImm(0).addMemOperand(MMO);
+  BuildMI(MBB, Position, dl, get(ELMO::LOAD))
+      .addReg(DestinationRegister, RegState::Define)
+      .addFrameIndex(FrameIndex)
+      .addImm(0)
+      .addMemOperand(MMO);
 }
 void ELMOInstrInfo::storeRegToStackSlot(
     llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator Position,
@@ -68,8 +70,10 @@ void ELMOInstrInfo::storeRegToStackSlot(
       MachineMemOperand::MOStore, MFI.getObjectSize(FrameIndex),
       MFI.getObjectAlignment(FrameIndex));
 
-  // BuildMI(MBB, Position, dl, get(ELMO::STORE))
-  //         .addReg(SourceRegister, getKillRegState(IsKill))
-  //         .addFrameIndex(FrameIndex).addImm(0).addMemOperand(MMO);
+  BuildMI(MBB, Position, dl, get(ELMO::STORE))
+      .addReg(SourceRegister, getKillRegState(IsKill))
+      .addFrameIndex(FrameIndex)
+      .addImm(0)
+      .addMemOperand(MMO);
 }
 }
