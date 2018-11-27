@@ -18,7 +18,8 @@ namespace llvm {
 // Pin the vtable to this file.
 void ELMOInstrInfo::anchor() {}
 
-ELMOInstrInfo::ELMOInstrInfo(ELMOSubtarget &ST) : ST(ST) {}
+ELMOInstrInfo::ELMOInstrInfo(ELMOSubtarget &ST)
+    : ST(ST), ELMOGenInstrInfo(ELMO::ADJCALLSTACKDOWN, ELMO::ADJCALLSTACKUP) {}
 void ELMOInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator Position,
                                 const DebugLoc &DL,

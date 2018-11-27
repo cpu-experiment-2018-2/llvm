@@ -219,7 +219,7 @@ defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
 /*  */
 
 
-let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 in {
+let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C] in {
     def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
                       "cjump $DDDI\t$addr",
                       [(ELMOBrCC bb:$addr, imm:$DDDI)],
@@ -262,11 +262,30 @@ defm : SeteqPats<ELMOGRRegs>;
 /* def Select_GPR_Using_CC_GPR : SelectCC_rrirr<ELMOGRRegs, ELMOGRRegs,"select">; */
 /*  */
 
-def SET_FLAG : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
-                      "cmp $Rs1,$Rs2",
+
+
+def psimm16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
+let Defs = [C] in {
+def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
+                      "cmpd $Rs1,$Rs2",
                       [(ELMOSetFlag (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2))],
                       IIBranch
                       >;
+
+def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs:$Rs1, ELMOGRFRegs:$Rs2),
+                      "cmpf $Rs1,$Rs2",
+                      [(ELMOSetFlag (f32 ELMOGRFRegs:$Rs1), (f32 ELMOGRFRegs:$Rs2))],
+                      IIBranch
+                      >;
+
+def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, CCOp:$imm),
+                      "cmpdi $Rs1,$imm",
+                      [(ELMOSetFlag i32:$Rs1, (i32 psimm16:$imm))],
+                      IIBranch
+                      >;
+}
+
+
 
 
 let Defs = [SP], Uses = [SP] in {  

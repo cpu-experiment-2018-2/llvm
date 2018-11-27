@@ -21,7 +21,6 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setStackPointerRegisterToSaveRestore(ELMO::SP);
   setBooleanContents(ZeroOrOneBooleanContent);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
-
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
 

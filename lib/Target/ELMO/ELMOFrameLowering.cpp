@@ -24,11 +24,6 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
   DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   uint64_t StackSize = MF.getFrameInfo().getStackSize();
 
-  if (!StackSize) {
-    WithColor::note() << "Emit epilogue end\n";
-
-    return;
-  }
   unsigned StackReg = ELMO::SP;
 
   unsigned OffsetReg = 0;
@@ -39,10 +34,20 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
           .setMIFlag(MachineInstr::FrameSetup);
     } else {
     */
-  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), StackReg)
-      .addReg(StackReg)
-      .addImm(StackSize)
-      .setMIFlag(MachineInstr::FrameSetup);
+
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::FP)
+      .addReg(ELMO::SP)
+      .addImm(0);
+  // Adjust stack.
+  if (StackSize) {
+    BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
+        .addReg(ELMO::SP)
+        .addImm(StackSize / 4);
+  }
+
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::FP)
+      .addReg(ELMO::SP)
+      .addImm(0);
 
   WithColor::note() << "Emit epilogue end\n";
   /*
@@ -61,16 +66,14 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Get the number of bytes from FrameInfo
   uint64_t StackSize = MFI.getStackSize();
-  if (!StackSize) {
-    WithColor::note() << "Emit prologue end\n";
 
-    return;
-  }
-
-  // Adjust stack.
   BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
-      .addReg(ELMO::SP)
-      .addImm(StackSize);
+      .addReg(ELMO::FP)
+      .addImm(0);
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::LOAD), ELMO::FP)
+      .addReg(ELMO::FP)
+      .addImm(0);
+
   WithColor::note() << "Emit prologue end\n";
 }
 void ELMOFrameLowering::adjustReg(MachineBasicBlock &MBB,

@@ -7,7 +7,8 @@
 namespace llvm {
 class ELMOSubtarget;
 class ELMOFrameLowering : public TargetFrameLowering {
-    ELMOSubtarget&STI;
+  ELMOSubtarget &STI;
+
 public:
   ELMOFrameLowering(ELMOSubtarget &);
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
@@ -29,11 +30,9 @@ public:
   /// responsible for rounding up the stack frame (probably at emitPrologue
   /// time).
   bool targetHandlesStackFrameRounding() const override { return true; }
-  void adjustReg(MachineBasicBlock &MBB,
-                                   MachineBasicBlock::iterator MBBI,
-                                   const DebugLoc &DL, unsigned DestReg,
-                                   unsigned SrcReg, int64_t Val,
-                                   MachineInstr::MIFlag Flag) const ;
+  void adjustReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
+                 const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                 int64_t Val, MachineInstr::MIFlag Flag) const;
 };
 }
 #endif
