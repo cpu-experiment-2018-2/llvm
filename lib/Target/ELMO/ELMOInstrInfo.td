@@ -107,7 +107,7 @@ def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIAlu, ELMOGRFRegs, 0>;
 
 
 /* def BLR  : RetInst<0b000010, "blr">;  */
-let mayLoad  = 1 in
+let mayLoad  = 1, hasSideEffects = 1 in
 def LOAD  : FL<0b000011, (outs ELMOGRRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
     "load $rd, $rs1, $imm16", [], IICLoad
 >;  

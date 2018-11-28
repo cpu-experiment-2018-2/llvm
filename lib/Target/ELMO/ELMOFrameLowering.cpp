@@ -19,8 +19,10 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
 
   WithColor::note() << "Emit epilogue\n";
+  MBB.dump();
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-  MachineBasicBlock::iterator MBBI = MBB.begin();
+
+  MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
   DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   uint64_t StackSize = MF.getFrameInfo().getStackSize();
 
@@ -35,18 +37,11 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
     } else {
     */
 
-  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::FP)
-      .addReg(ELMO::SP)
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
+      .addReg(ELMO::FP)
       .addImm(0);
-  // Adjust stack.
-  if (StackSize) {
-    BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
-        .addReg(ELMO::SP)
-        .addImm(StackSize / 4);
-  }
-
-  BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::FP)
-      .addReg(ELMO::SP)
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::LOAD), ELMO::FP)
+      .addReg(ELMO::FP)
       .addImm(0);
 
   WithColor::note() << "Emit epilogue end\n";
@@ -58,8 +53,10 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
 void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
   WithColor::note() << "Emit prologue\n";
-  MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
+  MBB.dump();
   MachineFrameInfo &MFI = MF.getFrameInfo();
+
+  MachineBasicBlock::iterator MBBI = MBB.begin();
 
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
   DebugLoc dl = MBBI->getDebugLoc();
@@ -67,11 +64,19 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
   // Get the number of bytes from FrameInfo
   uint64_t StackSize = MFI.getStackSize();
 
-  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
-      .addReg(ELMO::FP)
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::FP)
+      .addReg(ELMO::SP)
       .addImm(0);
-  BuildMI(MBB, MBBI, dl, TII.get(ELMO::LOAD), ELMO::FP)
-      .addReg(ELMO::FP)
+  if (StackSize) {
+    // Adjust stack.
+    BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
+        .addReg(ELMO::SP)
+        .addImm(StackSize / 4)
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
+  //
+  BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::FP)
+      .addReg(ELMO::SP)
       .addImm(0);
 
   WithColor::note() << "Emit prologue end\n";
@@ -101,14 +106,13 @@ bool ELMOFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
 MachineBasicBlock::iterator ELMOFrameLowering::eliminateCallFramePseudoInstr(
     llvm::MachineFunction &MF, llvm::MachineBasicBlock &MBB,
     llvm::MachineBasicBlock::iterator MI) const {
-  // unsigned SPReg = ELMO::SP;
+  unsigned SPReg = ELMO::SP;
   WithColor::note() << "PSEUDO ELIMMINATE\n";
   // DebugLoc DL = MI->getDebugLoc();
   //
   // if (!hasReservedCallFrame(MF)) {
   //   // If space has not been reserved for a call frame, ADJCALLSTACKDOWN and
   //   // ADJCALLSTACKUP must be converted to instructions manipulating the
-  //   stack
   //   // pointer. This is necessary when there is a variable length stack
   //   // allocation (e.g. alloca), which means it's not possible to allocate
   //   // space for outgoing arguments from within the function prologue.

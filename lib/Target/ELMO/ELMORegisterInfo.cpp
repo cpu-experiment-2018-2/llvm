@@ -30,11 +30,11 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
   unsigned FrameReg;
+
   int Offset =
       (getFrameLowering(MF)->getFrameIndexReference(MF, FrameIndex, FrameReg) +
        MI.getOperand(FIOperandNum + 1).getImm()) /
-          4 -
-      1;
+      4;
 
   if (!isInt<32>(Offset)) {
     report_fatal_error(
