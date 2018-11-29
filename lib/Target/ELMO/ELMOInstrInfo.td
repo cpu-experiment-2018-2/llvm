@@ -325,3 +325,36 @@ let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
   /*                      [(set i32:$rD, imm16ShiftedSExt:$imm)]>; */
 }
 
+// from sparcinstrinfo.td line 247
+class ICC_VAL<int N> : PatLeaf<(i32 N)>;
+def ICC_NE  : ICC_VAL< 9>;  // Not Equal
+def ICC_E   : ICC_VAL< 1>;  // Equal
+def ICC_G   : ICC_VAL<10>;  // Greater
+def ICC_LE  : ICC_VAL< 2>;  // Less or Equal
+def ICC_GE  : ICC_VAL<11>;  // Greater or Equal
+def ICC_L   : ICC_VAL< 3>;  // Less
+def ICC_GU  : ICC_VAL<12>;  // Greater Unsigned
+def ICC_LEU : ICC_VAL< 4>;  // Less or Equal Unsigned
+def ICC_CC  : ICC_VAL<13>;  // Carry Clear/Great or Equal Unsigned
+def ICC_CS  : ICC_VAL< 5>;  // Carry Set/Less Unsigned
+def ICC_POS : ICC_VAL<14>;  // Positive
+def ICC_NEG : ICC_VAL< 6>;  // Negative
+def ICC_VC  : ICC_VAL<15>;  // Overflow Clear
+def ICC_VS  : ICC_VAL< 7>;  // Overflow Set
+
+class FCC_VAL<int N> : PatLeaf<(i32 N)>;
+def FCC_U   : FCC_VAL<23>;  // Unordered
+def FCC_G   : FCC_VAL<22>;  // Greater
+def FCC_UG  : FCC_VAL<21>;  // Unordered or Greater
+def FCC_L   : FCC_VAL<20>;  // Less
+def FCC_UL  : FCC_VAL<19>;  // Unordered or Less
+def FCC_LG  : FCC_VAL<18>;  // Less or Greater
+def FCC_NE  : FCC_VAL<17>;  // Not Equal
+def FCC_E   : FCC_VAL<25>;  // Equal
+def FCC_UE  : FCC_VAL<26>;  // Unordered or Equal
+def FCC_GE  : FCC_VAL<27>;  // Greater or Equal
+def FCC_UGE : FCC_VAL<28>;  // Unordered or Greater or Equal
+def FCC_LE  : FCC_VAL<29>;  // Less or Equal
+def FCC_ULE : FCC_VAL<30>;  // Unordered or Less or Equal
+def FCC_O   : FCC_VAL<31>;  // Ordered
+
