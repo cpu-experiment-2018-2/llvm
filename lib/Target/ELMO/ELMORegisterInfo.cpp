@@ -22,9 +22,12 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj, unsigned FIOperandNum,
                                            RegScavenger *RS = nullptr) const {
 
+  // get instr
   MachineInstr &MI = *II;
+  // get basic block function
   MachineFunction &MF = *MI.getParent()->getParent();
   MachineRegisterInfo &MRI = MF.getRegInfo();
+  // get instr info
   const ELMOInstrInfo *TII = MF.getSubtarget<ELMOSubtarget>().getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
 
@@ -34,7 +37,8 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   int Offset =
       (getFrameLowering(MF)->getFrameIndexReference(MF, FrameIndex, FrameReg) +
        MI.getOperand(FIOperandNum + 1).getImm()) /
-      4;
+          4 +
+      1;
 
   if (!isInt<32>(Offset)) {
     report_fatal_error(
