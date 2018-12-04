@@ -60,8 +60,10 @@ def Im: Operand<i32>;
 def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
       // imm32SExt16 predicate - True if the i32 immediate fits in a 16-bit
         // sign extended field.  Used by instructions like 'addi'.
-          return (int32_t)Imm == (short)Imm;
+     return (int32_t)Imm == (short)Imm;
 }]>;
+
+def imm32  : Operand<i32>, ImmLeaf<i32, [{return true;}]>;
 
 
 def brtarget    : Operand<OtherVT> {
@@ -118,13 +120,26 @@ def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIAlu, ELMOGRFRegs, 0>;
 
 /* def BLR  : RetInst<0b000010, "blr">;  */
 let mayLoad  = 1, hasSideEffects = 1 in
+{
 def LOAD  : FL<0b000011, (outs ELMOGRRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
     "load $rd, $rs1, $imm16", [], IICLoad
 >;  
+
+def LOADF  : FL<0b000011, (outs ELMOGRFRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
+    "load $rd, $rs1, $imm16", [], IICLoad
+>; 
+}
 let mayStore = 1 in
+{
+def STOREF  : FL<0b000011, (outs ), (ins ELMOGRFRegs:$rd, ELMOGRRegs:$rs1,simm16:$imm16),
+    "store $rd, $rs1, $imm16", [], IICStore
+>;  
+
 def STORE  : FL<0b000011, (outs ), (ins ELMOGRRegs:$rd, ELMOGRRegs:$rs1,simm16:$imm16),
     "store $rd, $rs1, $imm16", [], IICStore
 >;  
+}
+
 
 
 
@@ -334,9 +349,10 @@ let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
   def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
                        "li $rD, $imm", 
                        [(set i32:$rD, imm32SExt16:$imm)], IIAlu>;
-  /* def LIS : FJ<15, (outs ELMOGRRegs:$rD), (ins s17imm:$imm), */
-  /*                      "lis $rD, $imm", IIC_IntSimple, */
-  /*                      [(set i32:$rD, imm16ShiftedSExt:$imm)]>; */
+
+  def LWI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
+                       "liw $rD, $imm", 
+                       [(set i32:$rD, imm32:$imm)], IIAlu>;
 }
 
 // from sparcinstrinfo.td line 247

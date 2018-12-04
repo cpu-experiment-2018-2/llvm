@@ -43,6 +43,8 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
+  setOperationAction(ISD::ConstantPool, MVT::Other, Custom);
+
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::Other, Expand);
   for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD})
@@ -280,7 +282,8 @@ SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
   // compare+branch instructions. i.e.:
   // (select (setcc lhs, rhs, cc), truev, falsev)
   // -> (riscvisd::select_cc lhs, rhs, cc, truev, falsev)
-  /* if (Op.getSimpleValueType() == XLenVT && CondV.getOpcode() == ISD::SETCC &&
+  /*
+   * if (Op.getSimpleValueType() == XLenVT && CondV.getOpcode() == ISD::SETCC &&
       CondV.getOperand(0).getSimpleValueType() == XLenVT) {
       SDValue LHS = CondV.getOperand(0);
       SDValue RHS = CondV.getOperand(1);
@@ -294,7 +297,7 @@ SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
       SDValue Ops[] = {LHS, RHS, TargetCC, TrueV, FalseV};
       return DAG.getNode(ELMOISD::SELECT_CC, DL, VTs, Ops);
   }
-   */
+  */
 
   // Otherwise:
   // (select condv, truev, falsev)
@@ -314,19 +317,15 @@ SDValue ELMOTargetLowering::lowerConstantPool(SDValue Op,
   EVT Ty = Op.getValueType();
   ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
   const Constant *CPA = N->getConstVal();
-  int64_t Offset = N->getOffset();
-  unsigned Alignment = N->getAlignment();
+  dbgs() << "lwer constant";
 
   if (!isPositionIndependent()) {
-    // SDValue CPAHi =
-    //     DAG.getTargetConstantPool(CPA, Ty, Alignment, Offset,
-    //     RISCVII::MO_HI);
+    SDValue CPAV = DAG.getTargetConstantPool(CPA, Ty);
     // SDValue CPALo =
     //     DAG.getTargetConstantPool(CPA, Ty, Alignment, Offset,
     //     RISCVII::MO_LO);
     // SDValue MNHi = SDValue(DAG.getMachineNode(RISCV::LUI, DL, Ty, CPAHi), 0);
-    SDValue M =
-        SDValue(DAG.getMachineNode(RISCV::ADDI, DL, Ty, MNHi, CPALo), 0);
+    SDValue M = SDValue(DAG.getMachineNode(ELMO::LWI, DL, Ty, CPAV), 0);
     return M;
   } else {
     report_fatal_error("Unable to lowerConstantPool");
