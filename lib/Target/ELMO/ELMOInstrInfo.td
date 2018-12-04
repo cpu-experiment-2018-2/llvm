@@ -33,8 +33,15 @@ def SDT_ELMOCall : SDTypeProfile<0, -1, [SDTCisVT<0, i32>]>;
 def ELMOJmpLink : SDNode<"ELMOISD::JmpLink",SDT_ELMOJmpLink,
                          [SDNPHasChain, SDNPOutGlue, SDNPOptInGlue,
                                                    SDNPVariadic]>;
+
 def ELMORet : SDNode < "ELMOISD::Ret", SDT_ELMORet,
     [SDNPHasChain, SDNPOptInGlue,SDNPVariadic]>; 
+
+def ELMORet2 : SDNode < "ELMOISD::Ret", SDTNone,
+    [SDNPHasChain, SDNPOptInGlue,SDNPVariadic]>; 
+
+ 
+
 def ELMOBrCC        : SDNode<"ELMOISD::BR_CC", SDT_ELMOBrCC,
                               [SDNPHasChain, SDNPInGlue]>;
 
@@ -45,7 +52,10 @@ def ELMOCall : SDNode < "ELMOISD::Call", SDT_ELMOCall,
 
 
 def CCOp : Operand<i32> {
+    let PrintMethod = "printCCOperand";
 }
+
+def Im: Operand<i32>;
 
 def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
       // imm32SExt16 predicate - True if the i32 immediate fits in a 16-bit
@@ -221,7 +231,7 @@ defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
 
 let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C] in {
     def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
-                      "cjump $DDDI\t$addr",
+                      "b$DDDI\t$addr",
                       [(ELMOBrCC bb:$addr, imm:$DDDI)],
 	IIBranch
 >;
@@ -230,7 +240,11 @@ let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C]
 
 
 let isReturn = 1,isBranch = 1, isTerminator=1, isBarrier = 1 in  
+{
 def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRRegs:$rc)] , IIBranch> ;
+
+def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> ;
+}
 multiclass SetltPats<RegisterClass RC> {
   def : Pat<(setlt RC:$lhs, RC:$rhs),
             (CMP RC:$lhs, RC:$rhs)>;
@@ -278,7 +292,7 @@ def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs:$Rs1, ELMOGRFRegs:$Rs2),
                       IIBranch
                       >;
 
-def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, CCOp:$imm),
+def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
                       "cmpdi $Rs1,$imm",
                       [(ELMOSetFlag i32:$Rs1, (i32 psimm16:$imm))],
                       IIBranch
@@ -309,7 +323,7 @@ def bare_symbol : Operand<OtherVT> {
 }
 let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1,  Defs = [LK] in { 
 /* def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl $addr", [], IIBranch>; */
-def PseudoCALL : Pseudo<(outs), (ins CCOp:$func),
+def PseudoCALL : Pseudo<(outs), (ins Im:$func),
                         "bl $func",
                         [(ELMOCall tglobaladdr:$func)], IIBranch>;
 def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
@@ -317,7 +331,7 @@ def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGR
 
 } 
 let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
-  def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins CCOp:$imm),
+  def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
                        "li $rD, $imm", 
                        [(set i32:$rD, imm32SExt16:$imm)], IIAlu>;
   /* def LIS : FJ<15, (outs ELMOGRRegs:$rD), (ins s17imm:$imm), */

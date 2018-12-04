@@ -10,6 +10,26 @@ using namespace llvm;
 #include "ELMOGenCallingConv.inc"
 #include "ELMOMachineFunctionInfo.h"
 
+static ELMOCC::CondCodes IntCondCCodeToICC(ISD::CondCode CC) {
+  switch (CC) {
+  default:
+    llvm_unreachable("unknown condition code");
+  // 符号無しとかはここでlowerしてもよいかもね
+  case ISD::SETEQ:
+    return ELMOCC::ICC_E;
+  case ISD::SETNE:
+    return ELMOCC::ICC_NE;
+  case ISD::SETLT:
+    return ELMOCC::ICC_L;
+  case ISD::SETGT:
+    return ELMOCC::ICC_G;
+  case ISD::SETLE:
+    return ELMOCC::ICC_LE;
+  case ISD::SETGE:
+    return ELMOCC::ICC_GE;
+  }
+}
+
 ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
                                        const ELMOSubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
@@ -21,8 +41,12 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setStackPointerRegisterToSaveRestore(ELMO::SP);
   setBooleanContents(ZeroOrOneBooleanContent);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
+  AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
+  setOperationAction(ISD::SELECT_CC, MVT::Other, Expand);
+  for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD})
+    setLoadExtAction(N, MVT::i32, MVT::i1, Promote);
 
   // setTargetDAGCombine(ISD::BRCOND);
   // Function alignments (log2).
@@ -45,6 +69,8 @@ SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
     return lowerSelect(Op, DAG);
   case ISD::BR_CC:
     return lowerBR_CC(Op, DAG);
+  case ISD::ConstantPool:
+    return lowerConstantPool(Op, DAG);
   }
 }
 
@@ -184,7 +210,6 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   return LowerCallResult(Chain, InFlag, CallConv, isVarArg, Ins, dl, DAG,
                          InVals);
 }
-
 SDValue ELMOTargetLowering::LowerFormalArguments(
     SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
@@ -221,76 +246,6 @@ SDValue ELMOTargetLowering::LowerFormalArguments(
   return Chain;
 }
 
-// static ELMOCC::CondCode IntCondCCodeToICC(SDValue CC, const SDLoc &DL,
-//                                         SDValue &RHS, SelectionDAG &DAG) {
-//   ISD::CondCode SetCCOpcode = cast<CondCodeSDNode>(CC)->get();
-//
-//   // For integer, only the SETEQ, SETNE, SETLT, SETLE, SETGT, SETGE, SETULT,
-//   // SETULE, SETUGT, and SETUGE opcodes are used (see CodeGen/ISDOpcodes.h)
-//   // and Lanai only supports integer comparisons, so only provide definitions
-//   // for them.
-//   switch (SetCCOpcode) {
-//   case ISD::SETEQ:
-//   case ISD::SETLT:
-//   case ISD::SETGT:
-//   case ISD::SETLE:
-//   case ISD::SETGE:
-//
-//   case ISD::SETEQ:
-//     return LPCC::ICC_EQ;
-//   case ISD::SETGT:
-//     if (ConstantSDNode *RHSC = dyn_cast<ConstantSDNode>(RHS))
-//       if (RHSC->getZExtValue() == 0xFFFFFFFF) {
-//         // X > -1 -> X >= 0 -> is_plus(X)
-//         RHS = DAG.getConstant(0, DL, RHS.getValueType());
-//         return LPCC::ICC_PL;
-//       }
-//     return LPCC::ICC_GT;
-//   case ISD::SETUGT:
-//     return LPCC::ICC_UGT;
-//   case ISD::SETLT:
-//     if (ConstantSDNode *RHSC = dyn_cast<ConstantSDNode>(RHS))
-//       if (RHSC->getZExtValue() == 0)
-//         // X < 0 -> is_minus(X)
-//         return LPCC::ICC_MI;
-//     return LPCC::ICC_LT;
-//   case ISD::SETULT:
-//     return LPCC::ICC_ULT;
-//   case ISD::SETLE:
-//     if (ConstantSDNode *RHSC = dyn_cast<ConstantSDNode>(RHS))
-//       if (RHSC->getZExtValue() == 0xFFFFFFFF) {
-//         // X <= -1 -> X < 0 -> is_minus(X)
-//         RHS = DAG.getConstant(0, DL, RHS.getValueType());
-//         return LPCC::ICC_MI;
-//       }
-//     return LPCC::ICC_LE;
-//   case ISD::SETULE:
-//     return LPCC::ICC_ULE;
-//   case ISD::SETGE:
-//     if (ConstantSDNode *RHSC = dyn_cast<ConstantSDNode>(RHS))
-//       if (RHSC->getZExtValue() == 0)
-//         // X >= 0 -> is_plus(X)
-//         return LPCC::ICC_PL;
-//     return LPCC::ICC_GE;
-//   case ISD::SETUGE:
-//     return LPCC::ICC_UGE;
-//   case ISD::SETNE:
-//     return LPCC::ICC_NE;
-//   case ISD::SETONE:
-//   case ISD::SETUNE:
-//   case ISD::SETOGE:
-//   case ISD::SETOLE:
-//   case ISD::SETOLT:
-//   case ISD::SETOGT:
-//   case ISD::SETOEQ:
-//   case ISD::SETUEQ:
-//   case ISD::SETO:
-//   case ISD::SETUO:
-//     llvm_unreachable("Unsupported comparison.");
-//   default:
-//     llvm_unreachable("Unknown integer condition code!");
-//   }
-// }
 SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 
   SDValue Chain = Op.getOperand(0);
@@ -301,7 +256,10 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
   SDLoc DL(Op);
 
   ISD::CondCode CC = cast<CondCodeSDNode>(Cond)->get();
-  SDValue TargetCC = DAG.getConstant(CC, DL, MVT::i32);
+  unsigned cc = ~0u;
+  cc = IntCondCCodeToICC(CC);
+
+  SDValue TargetCC = DAG.getConstant(cc, DL, MVT::i32);
 
   SDValue Flag =
       DAG.getNode(ELMOISD::SET_FLAG, DL, MVT::Glue, LHS, RHS, TargetCC);
@@ -348,4 +306,29 @@ SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
   SDValue Ops[] = {CondV, Zero, SetNE, TrueV, FalseV};
 
   return DAG.getNode(ELMOISD::SELECT_CC, DL, VTs, Ops);
+}
+
+SDValue ELMOTargetLowering::lowerConstantPool(SDValue Op,
+                                              SelectionDAG &DAG) const {
+  SDLoc DL(Op);
+  EVT Ty = Op.getValueType();
+  ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
+  const Constant *CPA = N->getConstVal();
+  int64_t Offset = N->getOffset();
+  unsigned Alignment = N->getAlignment();
+
+  if (!isPositionIndependent()) {
+    // SDValue CPAHi =
+    //     DAG.getTargetConstantPool(CPA, Ty, Alignment, Offset,
+    //     RISCVII::MO_HI);
+    // SDValue CPALo =
+    //     DAG.getTargetConstantPool(CPA, Ty, Alignment, Offset,
+    //     RISCVII::MO_LO);
+    // SDValue MNHi = SDValue(DAG.getMachineNode(RISCV::LUI, DL, Ty, CPAHi), 0);
+    SDValue M =
+        SDValue(DAG.getMachineNode(RISCV::ADDI, DL, Ty, MNHi, CPALo), 0);
+    return M;
+  } else {
+    report_fatal_error("Unable to lowerConstantPool");
+  }
 }

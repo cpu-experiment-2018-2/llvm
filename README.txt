@@ -1,3 +1,21 @@
+# cpuex向けのllvm
+* ninja,lldの導入を強く推奨
+
+
+```
+mkdir build
+cd build
+cmake .. -G "Ninja"
+ninja cpuex
+```
+build/binにいろいろである
+./cpuex -march=ELMOでコンパイル可能
+
+その他使う可能性があるのはoptとか
+* lib/Target/ELMOに実装がある
+
+
+
 The LLVM Compiler Infrastructure
 ================================
 

@@ -11,7 +11,10 @@ extern "C" void LLVMInitializeELMOTarget() {
   RegisterTargetMachine<ELMOTargetMachine> X(getTheELMOTarget());
   WithColor::note() << "TargetInit\n";
 }
-StringRef layout = "";
+
+StringRef layout = "e-m:e-p:32:32-i64:64-n32-S128";
+;
+// StringRef layout = "";
 
 ELMOTargetMachine::ELMOTargetMachine(const llvm::Target &T,
                                      const llvm::Triple &TT,

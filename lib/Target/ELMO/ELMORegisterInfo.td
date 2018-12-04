@@ -42,7 +42,7 @@ let Namespace = "ELMO" in {
   def G28   : ELMOGPRReg<28,  "r28">,    DwarfRegNum<[28]>;
   def G29   : ELMOGPRReg<29,  "r29">,    DwarfRegNum<[29]>;
   def G30   : ELMOGPRReg<30,  "r30">,    DwarfRegNum<[30]>;
-  def LK   : ELMOGPRReg<31,  "lk">,    DwarfRegNum<[31]>;
+  def LK   : ELMOGPRReg<31,  "lr">,    DwarfRegNum<[31]>;
   def C   : ELMOGPRReg<32,  "cond">,    DwarfRegNum<[31]>;
 }
 

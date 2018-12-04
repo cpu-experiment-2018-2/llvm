@@ -29,7 +29,10 @@ void ELMOInstPrinter::printOperand(const MCInst *MI, int opNum,
 void ELMOInstPrinter::printMemOperand(const MCInst *MI, int opNum,
                                       raw_ostream &OS, const char *Modifier) {}
 void ELMOInstPrinter::printCCOperand(const MCInst *MI, int opNum,
-                                     raw_ostream &OS) {}
+                                     raw_ostream &OS) {
+  int cc = (int)MI->getOperand(opNum).getImm();
+  OS << ELMOCondCodeToString((ELMOCC::CondCodes)cc);
+}
 bool ELMOInstPrinter::printGetPCX(const MCInst *MI, unsigned OpNo,
                                   raw_ostream &OS) {}
 
@@ -42,5 +45,5 @@ void ELMOInstPrinter::printInst(const llvm::MCInst *MI, llvm::raw_ostream &OS,
                                 llvm::StringRef Annot,
                                 const llvm::MCSubtargetInfo &STI) {
   printInstruction(MI, OS);
-  printAnnotation(OS, Annot);
+  // printAnnotation(OS, s);
 }
