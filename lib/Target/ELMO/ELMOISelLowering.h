@@ -40,6 +40,7 @@ public:
   SDValue lowerSelect(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerConstantPool(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerConstantFP(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
                                bool isVarArg,

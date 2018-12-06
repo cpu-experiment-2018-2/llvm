@@ -43,10 +43,22 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
-  setOperationAction(ISD::ConstantPool, MVT::Other, Custom);
+  // setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
+
+  // AddPromotedToType(ISD::ConstantFP, MVT::f32, MVT::i32);
+  // for (auto CC : FPCCToExtend)
+  //   setCondCodeAction(CC, MVT::f32, Expand);
+  // for (auto Op : FPOpToExtend)
+  //   setOperationAction(Op, MVT::f32, Expand);
 
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::Other, Expand);
+  setOperationAction(ISD::SELECT, MVT::Other, Expand);
+
+  setOperationAction(ISD::AND, MVT::i32, Expand);
+  setOperationAction(ISD::XOR, MVT::i32, Expand);
+
+  // setOperationAction(ISD::ConstantFP, MVT::f32, Custom);
   for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD})
     setLoadExtAction(N, MVT::i32, MVT::i1, Promote);
 
@@ -73,6 +85,8 @@ SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
     return lowerBR_CC(Op, DAG);
   case ISD::ConstantPool:
     return lowerConstantPool(Op, DAG);
+  case ISD::ConstantFP:
+    return lowerConstantFP(Op, DAG);
   }
 }
 
@@ -311,20 +325,45 @@ SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
   return DAG.getNode(ELMOISD::SELECT_CC, DL, VTs, Ops);
 }
 
+// SDValue ELMOTargetLowering::lowerAND(SDValue Op, SelectionDAG &DAG) const {
+//   SDValue lhs = Op.getOperand(0);
+//   SDValue rhs = Op.getOperand(1);
+//   DAG.getN(ISD::ADD
+// }
+SDValue ELMOTargetLowering::lowerConstantFP(SDValue Op,
+                                            SelectionDAG &DAG) const {
+  // auto CurDAG = DAG;
+  // auto N = cast<ConstantFPSDNode>(Op);
+  // APInt x = N->getValueAPF().bitcastToAPInt();
+  // SDValue CPAV = CurDAG->getTargetConstant(x, DL, EVT(MVT::i32));
+  // CPAV->dump();
+  // ReplaceNode(Node, CurDAG->getMachineNode(ELMO::LWI, DL, EVT(MVT::i32),
+  // CPAV));
+  // CurDAG->dump();
+
+  // SDLoc DL(Op);
+  // EVT Ty = Op.getValueType();
+  // dbgs() << "lower constantFP";
+  //
+  // ConstantFPSDNode *N = cast<ConstantFPSDNode>(Op);
+  // float y = N->getConstantFPValue()->getValueAPF().convertToFloat();
+  // int z = *(int *)(&z);
+  // SDValue L = DAG.getTargetConstant(z, DL, EVT(MVT::i32));
+  // SDValue M = SDValue(DAG.getMachineNode(ELMO::LWI, DL, EVT(MVT::i32), L),
+  // 0);
+  // M->dump();
+  return Op;
+}
 SDValue ELMOTargetLowering::lowerConstantPool(SDValue Op,
                                               SelectionDAG &DAG) const {
   SDLoc DL(Op);
   EVT Ty = Op.getValueType();
   ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
   const Constant *CPA = N->getConstVal();
-  dbgs() << "lwer constant";
+  dbgs() << "lower constant";
 
   if (!isPositionIndependent()) {
     SDValue CPAV = DAG.getTargetConstantPool(CPA, Ty);
-    // SDValue CPALo =
-    //     DAG.getTargetConstantPool(CPA, Ty, Alignment, Offset,
-    //     RISCVII::MO_LO);
-    // SDValue MNHi = SDValue(DAG.getMachineNode(RISCV::LUI, DL, Ty, CPAHi), 0);
     SDValue M = SDValue(DAG.getMachineNode(ELMO::LWI, DL, Ty, CPAV), 0);
     return M;
   } else {
