@@ -55,7 +55,6 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::SELECT_CC, MVT::Other, Expand);
   setOperationAction(ISD::SELECT, MVT::Other, Expand);
 
-  setOperationAction(ISD::AND, MVT::i32, Expand);
   setOperationAction(ISD::XOR, MVT::i32, Expand);
 
   // setOperationAction(ISD::ConstantFP, MVT::f32, Custom);
@@ -275,10 +274,26 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
   unsigned cc = ~0u;
   cc = IntCondCCodeToICC(CC);
 
-  SDValue TargetCC = DAG.getConstant(cc, DL, MVT::i32);
+  bool swap_condition = false;
+  bool swap_cont = true;
 
-  SDValue Flag =
-      DAG.getNode(ELMOISD::SET_FLAG, DL, MVT::Glue, LHS, RHS, TargetCC);
+  // switch (cc) {
+  // case ELMOCC::ICC_G:
+  //   cc = ELMOCC::ICC_L;
+  //   swap_condition = false;
+  //   break;
+  // case ELMOCC::ICC_GE:
+  //   cc = ELMOCC::ICC_LE;
+  //   swap_condition = false;
+  //   break;
+  // case ELMOCC::ICC_NE:
+  //   break;
+  // defuault:
+  //   break;
+  // }
+
+  SDValue TargetCC = DAG.getConstant(cc, DL, MVT::i32);
+  SDValue Flag = DAG.getNode(ELMOISD::SET_FLAG, DL, MVT::Glue, RHS, TargetCC);
 
   return DAG.getNode(ELMOISD::BR_CC, DL, Op.getValueType(), Chain, Dest,
                      TargetCC, Flag);

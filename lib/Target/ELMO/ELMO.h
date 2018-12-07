@@ -69,7 +69,7 @@ inline static const char *ELMOCondCodeToString(ELMOCC::CondCodes CC) {
   case ELMOCC::ICC_E:
     return "eq";
   case ELMOCC::ICC_G:
-    return "g";
+    return "gt";
   case ELMOCC::ICC_LE:
     return "le";
   case ELMOCC::ICC_GE:
@@ -95,11 +95,11 @@ inline static const char *ELMOCondCodeToString(ELMOCC::CondCodes CC) {
   case ELMOCC::FCC_A:
     return "a";
   case ELMOCC::FCC_N:
-    return "n";
+    return "ne";
   case ELMOCC::FCC_U:
     return "u";
   case ELMOCC::FCC_G:
-    return "g";
+    return "gt";
   case ELMOCC::FCC_UG:
     return "ug";
   case ELMOCC::FCC_L:

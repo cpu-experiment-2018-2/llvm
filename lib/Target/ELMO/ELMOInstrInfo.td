@@ -63,6 +63,7 @@ def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
      return (int32_t)Imm == (short)Imm;
 }]>;
 
+def imm32plus  : Operand<i32>, ImmLeaf<i32, [{return Imm>=0;}]>;
 def imm32  : Operand<i32>, ImmLeaf<i32, [{return true;}]>;
 
 
@@ -98,9 +99,15 @@ class ArithLogicR<bits<6> op, string instr_asm, SDNode OpNode,
 def simm16      : Operand<i32> {
   let DecoderMethod= "DecodeSimm16";
 }
-def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
+def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue());}]>;
 def ADDiu   : ArithLogicI<0x09, "addi", add, simm16, immSExt16, ELMOGRRegs>;
 def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>;
+def ShiftR  : ArithLogicI<0x09, "srawi", shl, simm16, immSExt16, ELMOGRRegs>;
+def ShifrLA  : ArithLogicI<0x09, "slawi", sra , simm16, immSExt16, ELMOGRRegs>;
+def ShifrLL  : ArithLogicI<0x09, "slawi", srl , simm16, immSExt16, ELMOGRRegs>;
+
+
+
 
 def mem : Operand<i32> {
       let PrintMethod = "printMemOperand";
@@ -111,6 +118,9 @@ def mem : Operand<i32> {
 
 def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>;
 def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>;
+def AND  : ArithLogicR<0b000000, "and", and, IIAlu, ELMOGRRegs, 1>;
+def OR  : ArithLogicR<0b000001, "or", or , IIAlu, ELMOGRRegs, 1>;
+
 
 def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIAlu, ELMOGRFRegs, 1>;
 def FSUB  : ArithLogicR<0b000001, "fsub", fsub, IIAlu, ELMOGRFRegs, 0>;
@@ -243,221 +253,175 @@ defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
 /* def BLR : JumpFR<0x000010, "blr", ELMOGRRegs> ; */
 /*  */
 
-let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1,
-    Uses = [ C ] in {
-  def BRCC : FJ<0b000111, (outs), (ins brtarget
-                                   : $addr, CCOp
-                                   : $DDDI),
-                "b$DDDI\t$addr", [ (ELMOBrCC bb
-                                    : $addr, imm
-                                    : $DDDI) ],
-                IIBranch>;
+
+let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C] in {
+    def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
+                      "b$DDDI\t$addr",
+                      [(ELMOBrCC bb:$addr, imm:$DDDI)],
+	IIBranch
+>;
 }
 
-let isReturn = 1, isBranch = 1, isTerminator = 1, isBarrier = 1 in {
-  def BLR : FI<0b000000, (outs), (ins ELMOGRRegs
-                                  : $rc),
-               "blr", [ (ELMORet ELMOGRRegs
-                         : $rc) ],
-               IIBranch>;
 
-  def PseudoBLR : FI<0b000000, (outs), (ins), "blr", [ (ELMORet2) ], IIBranch>;
+
+let isReturn = 1,isBranch = 1, isTerminator=1, isBarrier = 1 in  
+{
+def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRRegs:$rc)] , IIBranch> ;
+
+def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> ;
 }
 multiclass SetltPats<RegisterClass RC> {
-def:
-  Pat<(setlt RC : $lhs, RC : $rhs), (CMP RC : $lhs, RC : $rhs)>;
+  def : Pat<(setlt RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
 //          (XORi (ANDi (SHR (CMP RC:$lhs, RC:$rhs), (LUi 0x8000), 31), 1), 1)>;
-def:
-  Pat<(setult RC : $lhs, RC : $rhs), (CMP RC : $lhs, RC : $rhs)>;
+  def : Pat<(setult RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
 }
 
 defm : SetltPats<ELMOGRRegs>;
 
 multiclass SeteqPats<RegisterClass RC> {
-def:
-  Pat<(seteq RC : $lhs, RC : $rhs), (CMP RC : $lhs, RC : $rhs)>;
-def:
-  Pat<(setcc RC : $lhs, RC : $rhs, SETEQ), (CMP RC : $lhs, RC : $rhs)>;
+  def : Pat<(seteq RC:$lhs, RC:$rhs),
+            (CMP RC:$lhs, RC:$rhs)>;
+  def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ),
+            (CMP RC:$lhs, RC:$rhs)>;
 }
 
 defm : SeteqPats<ELMOGRRegs>;
 
 /* let usesCustomInserter = 1 in */
-/* class SelectCC_rrirr<RegisterClass valty, RegisterClass cmpty,string asmstr>
- */
+/* class SelectCC_rrirr<RegisterClass valty, RegisterClass cmpty,string asmstr> */
 /*     : Pseudo<(outs valty:$dst), */
 /*              (ins cmpty:$lhs, cmpty:$rhs, */
 /*               valty:$truev, valty:$falsev, CCOp:$imm), */
 /*               asmstr, */
-/*              [(set valty:$dst, (SelectCC cmpty:$lhs, cmpty:$rhs,imm:$imm,
- * valty:$truev, valty:$falsev))] */
+/*              [(set valty:$dst, (SelectCC cmpty:$lhs, cmpty:$rhs,imm:$imm, valty:$truev, valty:$falsev))] */
 /*               ,IIBranch>; */
 /*  */
-/* def Select_GPR_Using_CC_GPR : SelectCC_rrirr<ELMOGRRegs,
- * ELMOGRRegs,"select">; */
+/* def Select_GPR_Using_CC_GPR : SelectCC_rrirr<ELMOGRRegs, ELMOGRRegs,"select">; */
 /*  */
 
-def psimm16 : PatLeaf<(imm), [ { return isInt<16>(N->getSExtValue()); } ]>;
-let Defs = [ C ] in {
-  def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs
-                                   : $Rs1, ELMOGRRegs
-                                   : $Rs2),
-                "cmpd $Rs1,$Rs2", [ (ELMOSetFlag(i32 ELMOGRRegs
-                                                 : $Rs1),
-                                     (i32 ELMOGRRegs
-                                      : $Rs2)) ],
-                IIBranch>;
 
-  def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs
-                                   : $Rs1, ELMOGRFRegs
-                                   : $Rs2),
-                "cmpf $Rs1,$Rs2", [ (ELMOSetFlag(f32 ELMOGRFRegs
-                                                 : $Rs1),
-                                     (f32 ELMOGRFRegs
-                                      : $Rs2)) ],
-                IIBranch>;
 
-  def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs
-                                    : $Rs1, Im
-                                    : $imm),
-                 "cmpdi $Rs1,$imm", [ (ELMOSetFlag i32
-                                       : $Rs1, (i32 psimm16
-                                                : $imm)) ],
-                 IIBranch>;
+def psimm16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
+let Defs = [C] in {
+def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
+                      "cmpd $Rs1,$Rs2",
+                      [(ELMOSetFlag (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2))],
+                      IIBranch
+                      >;
+
+def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs:$Rs1, ELMOGRFRegs:$Rs2),
+                      "cmpf $Rs1,$Rs2",
+                      [(ELMOSetFlag (f32 ELMOGRFRegs:$Rs1), (f32 ELMOGRFRegs:$Rs2))],
+                      IIBranch
+                      >;
+
+def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
+                      "cmpdi $Rs1,$imm",
+                      [(ELMOSetFlag i32:$Rs1, (i32 psimm16:$imm))],
+                      IIBranch
+                      >;
 }
 
-let Defs = [ SP ], Uses = [ SP ] in {
-  def ADJCALLSTACKDOWN
-      : Pseudo<(outs), (ins i32imm
-                        : $amt1, i32imm
-                        : $amt2),
-               "#ADJCALLSTACKDOWN $amt1 $amt2", [ (CallSeqStart timm
-                                                   : $amt1, timm
-                                                   : $amt2) ],
-               IIBranch>;
-  def ADJCALLSTACKUP : Pseudo<(outs), (ins i32imm
-                                       : $amt1, i32imm
-                                       : $amt2),
-                              "#ADJCALLSTACKUP $amt1 $amt2", [ (CallSeqEnd timm
-                                                                : $amt1, timm
-                                                                : $amt2) ],
-                              IIBranch>;
-}
 
-def SELECT : Pseudo<(outs ELMOGRRegs
-                     : $Rd),
-                    (ins ELMOGRRegs
-                     : $Rs1, ELMOGRRegs
-                     : $Rs2, CCOp
-                     : $DDDI),
-                    "select", [ (set(i32 ELMOGRRegs
-                                     : $Rd),
-                                 (ELMOSelectCC(i32 ELMOGRRegs
-                                               : $Rs1),
-                                  (i32 ELMOGRRegs
-                                   : $Rs2),
-                                  (imm
-                                   : $DDDI))) ],
-                    IIBranch>;
-def bare_symbol : Operand<OtherVT> {}
-let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1, Defs = [ LK ] in {
-  /* def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl $addr", [], IIBranch>;
-   */
-  def PseudoCALL : Pseudo<(outs), (ins Im
-                                   : $func),
-                          "bl $func", [ (ELMOCall tglobaladdr
-                                         : $func) ],
-                          IIBranch>;
-  def CALLR : Pseudo<(outs), (ins ELMOGRRegs
-                              : $Rs1),
-                     "blrr $Rs1", [ (ELMOCall ELMOGRRegs
-                                     : $Rs1) ],
-                     IIBranch>;
+
+
+let Defs = [SP], Uses = [SP] in {  
+  def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
+                                "#ADJCALLSTACKDOWN $amt1 $amt2",
+                                [(CallSeqStart timm:$amt1, timm:$amt2)], IIBranch>;
+  def ADJCALLSTACKUP   : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
+                                "#ADJCALLSTACKUP $amt1 $amt2",
+                                [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>;
+  }  
+
+def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
+						  (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2, CCOp:$DDDI),
+                          "select",
+						  [(set (i32 ELMOGRRegs:$Rd),
+						   (ELMOSelectCC (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2),
+										  (imm:$DDDI)))],
+	IIBranch
+>; 
+def bare_symbol : Operand<OtherVT> {
 }
+let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1,  Defs = [LK] in { 
+/* def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl $addr", [], IIBranch>; */
+def PseudoCALL : Pseudo<(outs), (ins Im:$func),
+                        "bl $func",
+                        [(ELMOCall tglobaladdr:$func)], IIBranch>;
+def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+
+
+} 
 let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
-  def LI : FJ<14, (outs ELMOGRRegs
-                   : $rD),
-              (ins Im
-               : $imm),
-              "li $rD, $imm", [ (set i32
-                                 : $rD, imm32SExt16
-                                 : $imm) ],
-              IIAlu>;
+  def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
+                       "li $rD, $imm", 
+                       [(set i32:$rD, imm32SExt16:$imm)], IIAlu>;
 
-  def LWI : FJ<14, (outs ELMOGRRegs
-                    : $rD),
-               (ins Im
-                : $imm),
-               "liw $rD, $imm", [ (set i32
-                                   : $rD, imm32
-                                   : $imm) ],
-               IIAlu>;
+  def LWI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
+                       "liw $rD, $imm", 
+                       [(set i32:$rD, imm32:$imm)], IIAlu>;
 }
 
 // from sparcinstrinfo.td line 247
 class ICC_VAL<int N> : PatLeaf<(i32 N)>;
-def ICC_NE : ICC_VAL<9>;   // Not Equal
-def ICC_E : ICC_VAL<1>;    // Equal
-def ICC_G : ICC_VAL<10>;   // Greater
-def ICC_LE : ICC_VAL<2>;   // Less or Equal
-def ICC_GE : ICC_VAL<11>;  // Greater or Equal
-def ICC_L : ICC_VAL<3>;    // Less
-def ICC_GU : ICC_VAL<12>;  // Greater Unsigned
-def ICC_LEU : ICC_VAL<4>;  // Less or Equal Unsigned
-def ICC_CC : ICC_VAL<13>;  // Carry Clear/Great or Equal Unsigned
-def ICC_CS : ICC_VAL<5>;   // Carry Set/Less Unsigned
-def ICC_POS : ICC_VAL<14>; // Positive
-def ICC_NEG : ICC_VAL<6>;  // Negative
-def ICC_VC : ICC_VAL<15>;  // Overflow Clear
-def ICC_VS : ICC_VAL<7>;   // Overflow Set
+def ICC_NE  : ICC_VAL< 9>;  // Not Equal
+def ICC_E   : ICC_VAL< 1>;  // Equal
+def ICC_G   : ICC_VAL<10>;  // Greater
+def ICC_LE  : ICC_VAL< 2>;  // Less or Equal
+def ICC_GE  : ICC_VAL<11>;  // Greater or Equal
+def ICC_L   : ICC_VAL< 3>;  // Less
+def ICC_GU  : ICC_VAL<12>;  // Greater Unsigned
+def ICC_LEU : ICC_VAL< 4>;  // Less or Equal Unsigned
+def ICC_CC  : ICC_VAL<13>;  // Carry Clear/Great or Equal Unsigned
+def ICC_CS  : ICC_VAL< 5>;  // Carry Set/Less Unsigned
+def ICC_POS : ICC_VAL<14>;  // Positive
+def ICC_NEG : ICC_VAL< 6>;  // Negative
+def ICC_VC  : ICC_VAL<15>;  // Overflow Clear
+def ICC_VS  : ICC_VAL< 7>;  // Overflow Set
 
 class FCC_VAL<int N> : PatLeaf<(i32 N)>;
-def FCC_U : FCC_VAL<23>;   // Unordered
-def FCC_G : FCC_VAL<22>;   // Greater
-def FCC_UG : FCC_VAL<21>;  // Unordered or Greater
-def FCC_L : FCC_VAL<20>;   // Less
-def FCC_UL : FCC_VAL<19>;  // Unordered or Less
-def FCC_LG : FCC_VAL<18>;  // Less or Greater
-def FCC_NE : FCC_VAL<17>;  // Not Equal
-def FCC_E : FCC_VAL<25>;   // Equal
-def FCC_UE : FCC_VAL<26>;  // Unordered or Equal
-def FCC_GE : FCC_VAL<27>;  // Greater or Equal
-def FCC_UGE : FCC_VAL<28>; // Unordered or Greater or Equal
-def FCC_LE : FCC_VAL<29>;  // Less or Equal
-def FCC_ULE : FCC_VAL<30>; // Unordered or Less or Equal
-def FCC_O : FCC_VAL<31>;   // Ordered
+def FCC_U   : FCC_VAL<23>;  // Unordered
+def FCC_G   : FCC_VAL<22>;  // Greater
+def FCC_UG  : FCC_VAL<21>;  // Unordered or Greater
+def FCC_L   : FCC_VAL<20>;  // Less
+def FCC_UL  : FCC_VAL<19>;  // Unordered or Less
+def FCC_LG  : FCC_VAL<18>;  // Less or Greater
+def FCC_NE  : FCC_VAL<17>;  // Not Equal
+def FCC_E   : FCC_VAL<25>;  // Equal
+def FCC_UE  : FCC_VAL<26>;  // Unordered or Equal
+def FCC_GE  : FCC_VAL<27>;  // Greater or Equal
+def FCC_UGE : FCC_VAL<28>;  // Unordered or Greater or Equal
+def FCC_LE  : FCC_VAL<29>;  // Less or Equal
+def FCC_ULE : FCC_VAL<30>;  // Unordered or Less or Equal
+def FCC_O   : FCC_VAL<31>;  // Ordered
 
-def IsOrAdd : PatFrag<(ops node
-                       : $A, node
-                       : $B),
-                      (or node
-                       : $A, node
-                       : $B),
-                      [ { return isOrEquivalentToAdd(N); } ]>;
+
+def IsOrAdd: PatFrag<(ops node:$A, node:$B), (or node:$A, node:$B), [{
+  return isOrEquivalentToAdd(N);
+}]>;
+
 
 def AddrFI : ComplexPattern<iPTR, 1, "SelectAddrFI", [ frameindex ], []>;
 multiclass LdPat<PatFrag LoadOp, ELMOInst Inst> {
-def:
-  Pat<(LoadOp ELMOGRRegs : $rs1), (Inst ELMOGRRegs : $rs1, 0)>;
-def:
-  Pat<(LoadOp(add ELMOGRRegs
+def:Pat<(LoadOp ELMOGRRegs : $rs1), (Inst ELMOGRRegs : $rs1, 0)>;
+def:Pat<(LoadOp(add ELMOGRRegs
               : $rs1, immSExt16
               : $imm16)),
       (Inst ELMOGRRegs
        : $rs1, immSExt16
        : $imm16)>;
 
-def:
-  Pat<(LoadOp AddrFI : $rs1), (Inst AddrFI : $rs1, 0)>;
-def:
-  Pat<(LoadOp(add AddrFI
+def: Pat<(LoadOp AddrFI : $rs1), (Inst AddrFI : $rs1, 0)>;
+def: Pat<(LoadOp(add AddrFI
               : $rs1, immSExt16
               : $imm12)),
       (Inst AddrFI
        : $rs1, immSExt16
        : $imm12)>;
-def:
-  Pat<(LoadOp(IsOrAdd AddrFI
+def: Pat<(LoadOp(IsOrAdd AddrFI
               : $rs1, immSExt16
               : $imm12)),
       (Inst AddrFI
@@ -466,15 +430,13 @@ def:
 }
 
 multiclass StPat<PatFrag StoreOp, ELMOInst Inst, RegisterClass Reg> {
-def:
-  Pat<(StoreOp Reg
+def: Pat<(StoreOp Reg
        : $rs1, ELMOGRRegs
        : $rs2),
       (Inst Reg
        : $rs1, ELMOGRRegs
        : $rs2, 0)>;
-def:
-  Pat<(StoreOp Reg
+def: Pat<(StoreOp Reg
        : $rs1, (add ELMOGRRegs
                 : $rs2, immSExt16
                 : $imm16)),
@@ -483,14 +445,9 @@ def:
        : $rs2, immSExt16
        : $imm16)>;
 }
-
 defm : LdPat<load, LOAD>;
 defm : LdPat<load, LOADF>;
 
 defm : StPat<store, STORE, ELMOGRRegs>;
 defm : StPat<store, STOREF, ELMOGRFRegs>;
 
-/*
-def : Pat<(and ELMOGRRegs:$lhs, ELMOGRRegs:$rhs),
-          (brcc (CMPD (ADD ELMOGRRegs:$lhs, ELMOGRRegs:$rhs),2),1,0)>;
-*/
