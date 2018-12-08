@@ -56,6 +56,8 @@ def CCOp : Operand<i32> {
 }
 
 def Im: Operand<i32>;
+def Imf: Operand<f32>;
+
 
 def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
       // imm32SExt16 predicate - True if the i32 immediate fits in a 16-bit
@@ -65,6 +67,7 @@ def imm32SExt16  : Operand<i32>, ImmLeaf<i32, [{
 
 def imm32plus  : Operand<i32>, ImmLeaf<i32, [{return Imm>=0;}]>;
 def imm32  : Operand<i32>, ImmLeaf<i32, [{return true;}]>;
+def imm32f  : Operand<i32>, ImmLeaf<f32, [{return true;}]>;
 
 
 def brtarget    : Operand<OtherVT> {
@@ -75,7 +78,15 @@ def brtarget    : Operand<OtherVT> {
 
 
 
-//  Arithmetic and logical instructions with 2 register operands.
+
+
+class ArithLogicX<bits<6> op, string instr_asm, SDNode OpNode,
+                  RegisterClass InR,RegisterClass OutR> :
+  FL<op, (outs OutR:$ra), (ins InR:$rb),
+     !strconcat(instr_asm, "\t$ra, $rb"),
+     [(set OutR:$ra, (OpNode InR:$rb))], IIAlu> {
+  let isReMaterializable = 1;
+}
 class ArithLogicI<bits<6> op, string instr_asm, SDNode OpNode,
                   Operand Od, PatLeaf imm_type, RegisterClass RC> :
   FL<op, (outs RC:$ra), (ins RC:$rb, Od:$imm16),
@@ -105,6 +116,9 @@ def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>;
 def ShiftR  : ArithLogicI<0x09, "srawi", shl, simm16, immSExt16, ELMOGRRegs>;
 def ShifrLA  : ArithLogicI<0x09, "slawi", sra , simm16, immSExt16, ELMOGRRegs>;
 def ShifrLL  : ArithLogicI<0x09, "slawi", srl , simm16, immSExt16, ELMOGRRegs>;
+def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>;
+def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>;
+
 
 
 
@@ -201,57 +215,57 @@ class CmpInstr<bits<6> op, string instr_asm,
   let rc = 0;
   let isCommutable = isComm;
 }
-
-def JEQ     : CBranch<0x10, "jeq", COND, [G29]>;
-def JNE     : CBranch<0x11, "jne", COND, [G29]>;
-def JLT     : CBranch<0x12, "jlt", COND, [G29]>;
-def JGT     : CBranch<0x13, "jgt", COND, [G29]>;
-def JLE     : CBranch<0x14, "jle", COND, [G29]>;
-def JGE     : CBranch<0x15, "jge", COND, [G29]>;
-def CMP     : CmpInstr<0x16, "cmpd",IIBranch, COND,ELMOGRRegs, 0>;
-
-
-
-// brcond patterns
-multiclass BrcondPats<RegisterClass RC, Instruction JEQOp, Instruction JNEOp, 
-Instruction JLTOp, Instruction JGTOp, Instruction JLEOp, Instruction JGEOp, 
-Instruction CMPOp, Register ZEROReg> {
-def : Pat<(brcond (i32 (seteq RC:$lhs, RC:$rhs)), bb:$dst),
-          (JEQOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setueq RC:$lhs, RC:$rhs)), bb:$dst),
-          (JEQOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setne RC:$lhs, RC:$rhs)), bb:$dst),
-          (JNEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setune RC:$lhs, RC:$rhs)), bb:$dst),
-          (JNEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setlt RC:$lhs, RC:$rhs)), bb:$dst),
-          (JLTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setult RC:$lhs, RC:$rhs)), bb:$dst),
-          (JLTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setgt RC:$lhs, RC:$rhs)), bb:$dst),
-          (JGTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setugt RC:$lhs, RC:$rhs)), bb:$dst),
-          (JGTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setle RC:$lhs, RC:$rhs)), bb:$dst),
-          (JLEOp (CMPOp RC:$rhs, RC:$lhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setule RC:$lhs, RC:$rhs)), bb:$dst),
-          (JLEOp (CMPOp RC:$rhs, RC:$lhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setge RC:$lhs, RC:$rhs)), bb:$dst),
-          (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond (i32 (setuge RC:$lhs, RC:$rhs)), bb:$dst),
-          (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>;
-def : Pat<(brcond RC:$cond, bb:$dst),
-          (JNEOp (CMPOp RC:$cond, ZEROReg), bb:$dst)>;
-def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ),
-            (CMP RC:$lhs, RC:$rhs)>;
-
-}
-
-defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>;
+/*  */
+/* def JEQ     : CBranch<0x10, "jeq", COND, [G29]>; */
+/* def JNE     : CBranch<0x11, "jne", COND, [G29]>; */
+/* def JLT     : CBranch<0x12, "jlt", COND, [G29]>; */
+/* def JGT     : CBranch<0x13, "jgt", COND, [G29]>; */
+/* def JLE     : CBranch<0x14, "jle", COND, [G29]>; */
+/* def JGE     : CBranch<0x15, "jge", COND, [G29]>; */
+/* def CMP     : CmpInstr<0x16, "cmpd",IIBranch, COND,ELMOGRRegs, 0>; */
+/*  */
+/*  */
+/*  */
+/* // brcond patterns */
+/* multiclass BrcondPats<RegisterClass RC, Instruction JEQOp, Instruction JNEOp,  */
+/* Instruction JLTOp, Instruction JGTOp, Instruction JLEOp, Instruction JGEOp,  */
+/* Instruction CMPOp, Register ZEROReg> { */
+/* def : Pat<(brcond (i32 (seteq RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JEQOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setueq RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JEQOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setne RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JNEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setune RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JNEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setlt RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JLTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setult RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JLTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setgt RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JGTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setugt RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JGTOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setle RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JLEOp (CMPOp RC:$rhs, RC:$lhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setule RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JLEOp (CMPOp RC:$rhs, RC:$lhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setge RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond (i32 (setuge RC:$lhs, RC:$rhs)), bb:$dst), */
+/*           (JGEOp (CMPOp RC:$lhs, RC:$rhs), bb:$dst)>; */
+/* def : Pat<(brcond RC:$cond, bb:$dst), */
+/*           (JNEOp (CMPOp RC:$cond, ZEROReg), bb:$dst)>; */
+/* def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ), */
+/*             (CMP RC:$lhs, RC:$rhs)>; */
+/*  */
+/* } */
+/*  */
+/* defm : BrcondPats<ELMOGRRegs, JEQ, JNE, JLT, JGT, JLE, JGE, CMP, ZERO>; */
 
 /* let isReturn = 1,isCodeGenOnly = 1, hasCtrlDep=1, hasCtrlDep = 1 in  */
 /* def BLR : JumpFR<0x000010, "blr", ELMOGRRegs> ; */
-/*  */
+
 
 
 let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C] in {
@@ -270,24 +284,25 @@ def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRR
 
 def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> ;
 }
-multiclass SetltPats<RegisterClass RC> {
-  def : Pat<(setlt RC:$lhs, RC:$rhs),
-            (CMP RC:$lhs, RC:$rhs)>;
-//          (XORi (ANDi (SHR (CMP RC:$lhs, RC:$rhs), (LUi 0x8000), 31), 1), 1)>;
-  def : Pat<(setult RC:$lhs, RC:$rhs),
-            (CMP RC:$lhs, RC:$rhs)>;
-}
-
-defm : SetltPats<ELMOGRRegs>;
-
-multiclass SeteqPats<RegisterClass RC> {
-  def : Pat<(seteq RC:$lhs, RC:$rhs),
-            (CMP RC:$lhs, RC:$rhs)>;
-  def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ),
-            (CMP RC:$lhs, RC:$rhs)>;
-}
-
-defm : SeteqPats<ELMOGRRegs>;
+/* multiclass SetltPats<RegisterClass RC> { */
+/*   def : Pat<(setlt RC:$lhs, RC:$rhs), */
+/*             (CMP RC:$lhs, RC:$rhs)>; */
+/* //          (XORi (ANDi (SHR (CMP RC:$lhs, RC:$rhs), (LUi 0x8000), 31), 1), 1)>; */
+/*   def : Pat<(setult RC:$lhs, RC:$rhs), */
+/*             (CMP RC:$lhs, RC:$rhs)>; */
+/* } */
+/*  */
+/* defm : SetltPats<ELMOGRRegs>; */
+/*  */
+/* multiclass SeteqPats<RegisterClass RC> { */
+/*   def : Pat<(seteq RC:$lhs, RC:$rhs), */
+/*             (CMP RC:$lhs, RC:$rhs)>; */
+/*   def : Pat<(setcc RC:$lhs, RC:$rhs, SETEQ), */
+/*             (CMP RC:$lhs, RC:$rhs)>; */
+/* } */
+/*  */
+/* defm : SeteqPats<ELMOGRRegs>; */
+/*  */
 
 /* let usesCustomInserter = 1 in */
 /* class SelectCC_rrirr<RegisterClass valty, RegisterClass cmpty,string asmstr> */
@@ -363,7 +378,19 @@ let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
   def LWI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
                        "liw $rD, $imm", 
                        [(set i32:$rD, imm32:$imm)], IIAlu>;
+
 }
+class FJJ<bits<6> op, dag outs, dag ins, string asmstr, list<dag> pattern,
+         InstrItinClass itin> : ELMOInst<outs, ins, asmstr, pattern, itin> {
+  let Opcode = op;
+         }
+
+def FR : RegisterOperand<ELMOGRFRegs>;
+
+/* def LWIF  : FJJ<14, (outs FR:$rD), (ins Imf:$imm), */
+/*                        "liw $rD,$imm",  */
+/*                        [(set f32:$rD, imm32f:$imm)], IIAlu>; */
+
 
 // from sparcinstrinfo.td line 247
 class ICC_VAL<int N> : PatLeaf<(i32 N)>;

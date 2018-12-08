@@ -26,9 +26,9 @@ void ELMOInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                 unsigned DestinationRegister,
                                 unsigned SourceRegister,
                                 bool KillSource) const {
-  BuildMI(MBB, Position, DL, get(ELMO::ADD), DestinationRegister)
+  BuildMI(MBB, Position, DL, get(ELMO::ADDiu), DestinationRegister)
       .addReg(SourceRegister, getKillRegState(KillSource))
-      .addReg(ELMO::ZERO);
+      .addImm(0);
 }
 void ELMOInstrInfo::loadRegFromStackSlot(
     llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator Position,

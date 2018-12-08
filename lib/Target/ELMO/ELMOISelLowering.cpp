@@ -27,6 +27,32 @@ static ELMOCC::CondCodes IntCondCCodeToICC(ISD::CondCode CC) {
     return ELMOCC::ICC_LE;
   case ISD::SETGE:
     return ELMOCC::ICC_GE;
+
+  case ISD::SETOEQ:
+    return ELMOCC::FCC_E;
+  case ISD::SETONE:
+    return ELMOCC::FCC_NE;
+  case ISD::SETOLT:
+    return ELMOCC::FCC_L;
+  case ISD::SETOGT:
+    return ELMOCC::FCC_G;
+  case ISD::SETOLE:
+    return ELMOCC::FCC_LE;
+  case ISD::SETOGE:
+    return ELMOCC::FCC_GE;
+
+  case ISD::SETUEQ:
+    return ELMOCC::FCC_E;
+  case ISD::SETUNE:
+    return ELMOCC::FCC_NE;
+  case ISD::SETULT:
+    return ELMOCC::FCC_L;
+  case ISD::SETUGT:
+    return ELMOCC::FCC_G;
+  case ISD::SETULE:
+    return ELMOCC::FCC_LE;
+  case ISD::SETUGE:
+    return ELMOCC::FCC_GE;
   }
 }
 
@@ -43,6 +69,7 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
+  setOperationAction(ISD::BR_CC, MVT::f32, Custom);
   // setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
 
   // AddPromotedToType(ISD::ConstantFP, MVT::f32, MVT::i32);
@@ -56,6 +83,12 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::SELECT, MVT::Other, Expand);
 
   setOperationAction(ISD::XOR, MVT::i32, Expand);
+  // ISD::CondCode FPCCToExtend[] = {ISD::SETOGT, ISD::SETOGE, ISD::SETONE,
+  //                                 ISD::SETO,   ISD::SETUEQ, ISD::SETUGT,
+  //                                 ISD::SETUGE, ISD::SETULT, ISD::SETULE,
+  //                                 ISD::SETUNE, ISD::SETOLT};
+  // for (auto Op : FPCCToExtend)
+  //   setOperationAction(Op, MVT::f32, Expand);
 
   // setOperationAction(ISD::ConstantFP, MVT::f32, Custom);
   for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD})
@@ -272,6 +305,7 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 
   ISD::CondCode CC = cast<CondCodeSDNode>(Cond)->get();
   unsigned cc = ~0u;
+  DAG.dump();
   cc = IntCondCCodeToICC(CC);
 
   bool swap_condition = false;
