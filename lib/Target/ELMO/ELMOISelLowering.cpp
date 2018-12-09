@@ -128,10 +128,15 @@ const char *ELMOTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "ELMOISD::Ret";
   case ELMOISD::Call:
     return "ELMOISD::Call";
-  case ELMOISD::BR_CC:
-    return "ELMOISD::BR_CC";
-  case ELMOISD::SET_FLAG:
-    return "ELMOISD::SET_FLAG";
+  case ELMOISD::BRICC:
+    return "ELMOISD::BRICC";
+  case ELMOISD::BRFCC:
+    return "ELMOISD::BRFCC";
+  case ELMOISD::SET_FLAGI:
+    return "ELMOISD::SET_FLAGI";
+  case ELMOISD::SET_FLAGF:
+    return "ELMOISD::SET_FLAGF";
+
   default:
     return nullptr;
   }
@@ -327,10 +332,13 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
   // }
 
   SDValue TargetCC = DAG.getConstant(cc, DL, MVT::i32);
-  SDValue Flag = DAG.getNode(ELMOISD::SET_FLAG, DL, MVT::Glue, RHS, TargetCC);
+  SDValue Flag = DAG.getNode(
+      LHS.getValueType() == MVT::i32 ? ELMOISD::SET_FLAGI : ELMOISD::SET_FLAGF,
+      DL, MVT::Glue, LHS, RHS);
 
-  return DAG.getNode(ELMOISD::BR_CC, DL, Op.getValueType(), Chain, Dest,
-                     TargetCC, Flag);
+  return DAG.getNode(LHS.getValueType() == MVT::i32 ? ELMOISD::BRICC
+                                                    : ELMOISD::BRFCC,
+                     DL, MVT::Other, Chain, Dest, TargetCC, Flag);
 }
 SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
   SDValue CondV = Op.getOperand(0);

@@ -10,9 +10,11 @@ enum NodeType {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
   Call,
   Ret,
-  BR_CC,
+  BRICC,
+  BRFCC,
   SELECT_CC,
-  SET_FLAG
+  SET_FLAGI,
+  SET_FLAGF
 };
 }
 class ELMOSubtarget;
@@ -48,5 +50,5 @@ public:
                                const SDLoc &dl, SelectionDAG &DAG,
                                SmallVectorImpl<SDValue> &InVals) const override;
 };
-}
+} // namespace llvm
 #endif

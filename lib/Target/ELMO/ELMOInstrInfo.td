@@ -16,9 +16,20 @@ def CallSeqEnd       : SDNode<"ISD::CALLSEQ_END", SDT_ELMOCallSeqEnd,
 
 
 
-def SDT_ELMOSetFlag      : SDTypeProfile<0,  2, [SDTCisSameAs<0, 1>]>;
-def ELMOSetFlag     : SDNode<"ELMOISD::SET_FLAG", SDT_ELMOSetFlag,
+
+// sparcのcmpiccに対応
+def SDT_ELMOSetFlagInt      : SDTypeProfile<0,  2, [SDTCisInt<0>, SDTCisSameAs<0, 1>]>;
+def ELMOSetFlagInt     : SDNode<"ELMOISD::SET_FLAGI", SDT_ELMOSetFlagInt,
                               [SDNPOutGlue]>;
+
+// sparcのcmpfccに対応
+def SDT_ELMOSetFlagFP  :
+SDTypeProfile<0, 2, [SDTCisFP<0>, SDTCisSameAs<0, 1>]>;
+def ELMOSetFlagFP     : SDNode<"ELMOISD::SET_FLAGF", SDT_ELMOSetFlagFP,
+                              [SDNPOutGlue]>;
+
+
+
 def SDT_ELMOSelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
                                                  SDTCisSameAs<1, 2>
                                                  ]>;
@@ -40,9 +51,9 @@ def ELMORet : SDNode < "ELMOISD::Ret", SDT_ELMORet,
 def ELMORet2 : SDNode < "ELMOISD::Ret", SDTNone,
     [SDNPHasChain, SDNPOptInGlue,SDNPVariadic]>; 
 
- 
-
-def ELMOBrCC        : SDNode<"ELMOISD::BR_CC", SDT_ELMOBrCC,
+def ELMObricc       : SDNode<"ELMOISD::BRICC", SDT_ELMOBrCC,
+                              [SDNPHasChain, SDNPInGlue]>;
+def ELMObrfcc        : SDNode<"ELMOISD::BRFCC", SDT_ELMOBrCC,
                               [SDNPHasChain, SDNPInGlue]>;
 
 
@@ -196,25 +207,25 @@ class JumpFR<bits<6> op, string instr_asm, RegisterClass RC>:
 
 def JMP : UncondBranch<0b000000, "jump">;
 
-class CBranch<bits<6> op, string instr_asm, RegisterClass RC,
-                   list<Register> UseRegs>:
-  FJ<op, (outs), (ins RC:$ra, brtarget:$addr),
-             !strconcat(instr_asm, "\t$ra, $addr"),
-             [], IIBranch> {
-  let isBranch = 1;
-  let isTerminator = 1;
-  let hasDelaySlot = 0;
-  let DecoderMethod = "DecodeBranchTarget";
-}
-
-class CmpInstr<bits<6> op, string instr_asm, 
-               InstrItinClass itin, RegisterClass RC, RegisterClass RD, 
-               bit isComm = 0>:
-  FA<op, (outs RD:$rc), (ins RC:$ra, RC:$rb),
-     !strconcat(instr_asm, "\t$rc, $ra, $rb"), [], itin> {
-  let rc = 0;
-  let isCommutable = isComm;
-}
+/* class CBranch<bits<6> op, string instr_asm, RegisterClass RC, */
+/*                    list<Register> UseRegs>: */
+/*   FJ<op, (outs), (ins RC:$ra, brtarget:$addr), */
+/*              !strconcat(instr_asm, "\t$ra, $addr"), */
+/*              [], IIBranch> { */
+/*   let isBranch = 1; */
+/*   let isTerminator = 1; */
+/*   let hasDelaySlot = 0; */
+/*   let DecoderMethod = "DecodeBranchTarget"; */
+/* } */
+/*  */
+/* class CmpInstr<bits<6> op, string instr_asm,  */
+/*                InstrItinClass itin, RegisterClass RC, RegisterClass RD,  */
+/*                bit isComm = 0>: */
+/*   FA<op, (outs RD:$rc), (ins RC:$ra, RC:$rb), */
+/*      !strconcat(instr_asm, "\t$rc, $ra, $rb"), [], itin> { */
+/*   let rc = 0; */
+/*   let isCommutable = isComm; */
+/* } */
 /*  */
 /* def JEQ     : CBranch<0x10, "jeq", COND, [G29]>; */
 /* def JNE     : CBranch<0x11, "jne", COND, [G29]>; */
@@ -269,11 +280,17 @@ class CmpInstr<bits<6> op, string instr_asm,
 
 
 let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C] in {
-    def BRCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
+    def BRICC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
                       "b$DDDI\t$addr",
-                      [(ELMOBrCC bb:$addr, imm:$DDDI)],
+                      [(ELMObricc bb:$addr, imm:$DDDI)],
 	IIBranch
 >;
+    def BRFCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
+                      "b$DDDI\t$addr",
+                      [(ELMObrfcc bb:$addr, imm:$DDDI)],
+	IIBranch
+>;
+
 }
 
 
@@ -322,19 +339,19 @@ def psimm16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
 let Defs = [C] in {
 def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
                       "cmpd $Rs1,$Rs2",
-                      [(ELMOSetFlag (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2))],
+                      [(ELMOSetFlagInt i32:$Rs1, i32 :$Rs2)],
                       IIBranch
                       >;
 
 def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs:$Rs1, ELMOGRFRegs:$Rs2),
                       "cmpf $Rs1,$Rs2",
-                      [(ELMOSetFlag (f32 ELMOGRFRegs:$Rs1), (f32 ELMOGRFRegs:$Rs2))],
+                      [(ELMOSetFlagFP f32 :$Rs1, f32 :$Rs2)],
                       IIBranch
                       >;
 
 def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
                       "cmpdi $Rs1,$imm",
-                      [(ELMOSetFlag i32:$Rs1, (i32 psimm16:$imm))],
+                      [(ELMOSetFlagInt i32:$Rs1, (i32 psimm16:$imm))],
                       IIBranch
                       >;
 }
