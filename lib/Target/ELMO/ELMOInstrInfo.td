@@ -31,10 +31,32 @@ def ELMOSetFlagFP     : SDNode<"ELMOISD::SET_FLAGF", SDT_ELMOSetFlagFP,
 
 
 def SDT_ELMOSelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
-                                                 SDTCisSameAs<1, 2>
+                                                SDTCisSameAs<1, 2>,
+                                                SDTCisVT<3, i32>
                                                  ]>;
-def ELMOSelectCC     : SDNode<"ELMOISD::SELECT_CC", SDT_ELMOSelectCC,
-                          [SDNPInGlue]>;
+def ELMOselecticc : SDNode<"ELMOISD::SELECT_ICC", SDT_ELMOSelectCC, [SDNPInGlue]>;
+def ELMOselectfcc : SDNode<"ELMOISD::SELECT_FCC", SDT_ELMOSelectCC, [SDNPInGlue]>;
+
+let Uses = [C], usesCustomInserter = 1 in {
+  def SELECT_CC_Int_ICC
+   : Pseudo<(outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T, ELMOGRRegs:$F, i32imm:$Cond),
+            "# SELECT_CC_Int_ICC PSEUDO!",
+            [(set i32:$dst, (ELMOselecticc i32:$T, i32:$F, imm:$Cond))],IIAlu>;
+  def SELECT_CC_FP_ICC
+   : Pseudo<(outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$T, ELMOGRFRegs:$F, i32imm:$Cond),
+            "# SELECT_CC_FP_ICC PSEUDO!",
+            [(set f32:$dst, (ELMOselecticc f32:$T, f32:$F, imm:$Cond))], IIAlu>;
+  def SELECT_CC_Int_FCC
+   : Pseudo<(outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T, ELMOGRRegs:$F, i32imm:$Cond),
+            "# SELECT_CC_Int_ICC PSEUDO!",
+            [(set i32:$dst, (ELMOselectfcc i32:$T, i32:$F, imm:$Cond))],IIAlu>;
+  def SELECT_CC_FP_FCC
+   : Pseudo<(outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$T, ELMOGRFRegs:$F, i32imm:$Cond),
+            "# SELECT_CC_FP_ICC PSEUDO!",
+            [(set f32:$dst, (ELMOselectfcc f32:$T, f32:$F, imm:$Cond))], IIAlu>;
+
+}
+
 def SDT_ELMORet : SDTypeProfile < 0, 1, [SDTCisInt<0>]>;
 def SDT_ELMOBrCC : SDTypeProfile<0,  2, [SDTCisVT<0, OtherVT>,
                                                   SDTCisVT<1, i32>]>;
@@ -129,6 +151,8 @@ def ShifrLA  : ArithLogicI<0x09, "slawi", sra , simm16, immSExt16, ELMOGRRegs>;
 def ShifrLL  : ArithLogicI<0x09, "slawi", srl , simm16, immSExt16, ELMOGRRegs>;
 def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>;
 def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>;
+def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>;
+
 
 
 
@@ -357,8 +381,8 @@ def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
                       IIBranch
                       >;
 }
-def : Pat<(setcc ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs, SETOGE),
-            (CMPF ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs)>;
+/* def : Pat<(setcc ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs, SETOGE), */
+/*             (CMPF ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs)>; */
 
 
 
@@ -373,14 +397,14 @@ let Defs = [SP], Uses = [SP] in {
                                 [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>;
   }  
 
-def SELECT : Pseudo<(outs ELMOGRRegs:$Rd),
-						  (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2, CCOp:$DDDI),
-                          "select",
-						  [(set (i32 ELMOGRRegs:$Rd),
-						   (ELMOSelectCC (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2),
-										  (imm:$DDDI)))],
-	IIBranch
->; 
+/* def SELECT : Pseudo<(outs ELMOGRRegs:$Rd), */
+/* 						  (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2, CCOp:$DDDI), */
+/*                           "select", */
+/* 						  [(set (i32 ELMOGRRegs:$Rd), */
+/* 						   (ELMOSelectCC (i32 ELMOGRRegs:$Rs1), (i32 ELMOGRRegs:$Rs2), */
+/* 										  (imm:$DDDI)))], */
+/* 	IIBranch */
+/* >;  */
 def bare_symbol : Operand<OtherVT> {
 }
 let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1,  Defs = [LK] in { 
@@ -401,6 +425,9 @@ let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
                        "liw $rD, $imm", 
                        [(set i32:$rD, imm32:$imm)], IIAlu>;
 
+  def LWIF  : FJ<14, (outs ELMOGRFRegs:$rD), (ins Imf:$imm),
+                       "liw $rD, $imm", 
+                       [(set f32:$rD, fpimm:$imm)], IIAlu>;
 }
 class FJJ<bits<6> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin> : ELMOInst<outs, ins, asmstr, pattern, itin> {
