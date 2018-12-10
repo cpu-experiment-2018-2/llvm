@@ -335,6 +335,8 @@ def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> ;
 
 
 
+
+
 def psimm16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue()); }]>;
 let Defs = [C] in {
 def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
@@ -355,6 +357,9 @@ def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
                       IIBranch
                       >;
 }
+def : Pat<(setcc ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs, SETOGE),
+            (CMPF ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs)>;
+
 
 
 
