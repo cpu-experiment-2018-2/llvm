@@ -146,9 +146,9 @@ def simm16      : Operand<i32> {
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue());}]>;
 def ADDiu   : ArithLogicI<0x09, "addi", add, simm16, immSExt16, ELMOGRRegs>;
 def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>;
-def ShiftR  : ArithLogicI<0x09, "srawi", shl, simm16, immSExt16, ELMOGRRegs>;
-def ShifrLA  : ArithLogicI<0x09, "slawi", sra , simm16, immSExt16, ELMOGRRegs>;
-def ShifrLL  : ArithLogicI<0x09, "slawi", srl , simm16, immSExt16, ELMOGRRegs>;
+def ShiftR  : ArithLogicI<0x09, "slawi", shl, simm16, immSExt16, ELMOGRRegs>;
+def ShifrLA  : ArithLogicI<0x09, "srawi", sra , simm16, immSExt16, ELMOGRRegs>;
+def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>;
 def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>;
 def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>;
 def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>;
@@ -169,6 +169,8 @@ def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>;
 def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>;
 def AND  : ArithLogicR<0b000000, "and", and, IIAlu, ELMOGRRegs, 1>;
 def OR  : ArithLogicR<0b000001, "or", or , IIAlu, ELMOGRRegs, 1>;
+def XOR  : ArithLogicR<0b000000, "xor", xor, IIAlu, ELMOGRRegs, 1>;
+
 
 
 def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIAlu, ELMOGRFRegs, 1>;
@@ -300,6 +302,9 @@ def JMP : UncondBranch<0b000000, "jump">;
 
 /* let isReturn = 1,isCodeGenOnly = 1, hasCtrlDep=1, hasCtrlDep = 1 in  */
 /* def BLR : JumpFR<0x000010, "blr", ELMOGRRegs> ; */
+
+def : Pat<(fneg ELMOGRFRegs:$i), 
+             (FSUB ZERO, ELMOGRFRegs:$i)>; 
 
 
 
@@ -482,6 +487,10 @@ def IsOrAdd: PatFrag<(ops node:$A, node:$B), (or node:$A, node:$B), [{
 
 def AddrFI : ComplexPattern<iPTR, 1, "SelectAddrFI", [ frameindex ], []>;
 multiclass LdPat<PatFrag LoadOp, ELMOInst Inst> {
+def: Pat<(LoadOp  immSExt16 : $imm16),
+      (Inst ZERO , immSExt16
+       : $imm16)>;
+
 def:Pat<(LoadOp ELMOGRRegs : $rs1), (Inst ELMOGRRegs : $rs1, 0)>;
 def:Pat<(LoadOp(add ELMOGRRegs
               : $rs1, immSExt16
@@ -507,6 +516,12 @@ def: Pat<(LoadOp(IsOrAdd AddrFI
 
 multiclass StPat<PatFrag StoreOp, ELMOInst Inst, RegisterClass Reg> {
 def: Pat<(StoreOp Reg
+       : $rs1, immSExt16 
+       : $imm16),
+      (Inst Reg
+       : $rs1, ZERO , immSExt16
+       : $imm16)>;
+def: Pat<(StoreOp Reg
        : $rs1, ELMOGRRegs
        : $rs2),
       (Inst Reg
@@ -523,7 +538,12 @@ def: Pat<(StoreOp Reg
 }
 defm : LdPat<load, LOAD>;
 defm : LdPat<load, LOADF>;
+defm : LdPat<zextloadi8, LOAD>;
+defm : LdPat<zextloadi8, LOADF>;
 
 defm : StPat<store, STORE, ELMOGRRegs>;
 defm : StPat<store, STOREF, ELMOGRFRegs>;
-
+def : Pat<(add (i32 AddrFI:$Rs), imm32SExt16:$imm12),
+          (ADDiu (i32 AddrFI:$Rs), imm32SExt16:$imm12)>;
+def : Pat<(IsOrAdd (i32 AddrFI:$Rs), imm32SExt16:$imm12),
+          (ADDiu (i32 AddrFI:$Rs), immSExt16:$imm12)>;

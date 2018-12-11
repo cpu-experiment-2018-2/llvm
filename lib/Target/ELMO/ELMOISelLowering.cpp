@@ -1,8 +1,10 @@
 #include "ELMO.h"
 #include "ELMOISelLowering.h"
+#include "ELMOMachineFunctionInfo.h"
 #include "ELMORegisterInfo.h"
 #include "ELMOTargetMachine.h"
 #include "ELMOTargetObjectFile.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
 #include <llvm/CodeGen/CallingConvLower.h>
 #include <llvm/Support/WithColor.h>
 
@@ -10,7 +12,7 @@ using namespace llvm;
 #include "ELMOGenCallingConv.inc"
 #include "ELMOMachineFunctionInfo.h"
 
-static ELMOCC::CondCodes IntCondCCodeToICC(ISD::CondCode CC) {
+static ELMOCC::CondCodes CondCCodeToICC(ISD::CondCode CC) {
   switch (CC) {
   default:
     llvm_unreachable("unknown condition code");
@@ -27,8 +29,10 @@ static ELMOCC::CondCodes IntCondCCodeToICC(ISD::CondCode CC) {
     return ELMOCC::ICC_LE;
   case ISD::SETGE:
     return ELMOCC::ICC_GE;
-
   case ISD::SETOEQ:
+    return ELMOCC::FCC_E;
+  case ISD::SETO:
+    // いいんか
     return ELMOCC::FCC_E;
   case ISD::SETONE:
     return ELMOCC::FCC_NE;
@@ -67,7 +71,6 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setStackPointerRegisterToSaveRestore(ELMO::SP);
   setBooleanContents(ZeroOrOneBooleanContent);
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
-  AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
   setOperationAction(ISD::BR_CC, MVT::f32, Custom);
   // setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
@@ -79,20 +82,27 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   //   setOperationAction(Op, MVT::f32, Expand);
 
   setOperationAction(ISD::BRCOND, MVT::Other, Expand);
-  setOperationAction(ISD::SELECT_CC, MVT::Other, Expand);
-  setOperationAction(ISD::SELECT, MVT::Other, Expand);
-
+  setOperationAction(ISD::SELECT_CC, MVT::i32, Custom);
+  setOperationAction(ISD::SELECT_CC, MVT::f32, Custom);
+  setOperationAction(ISD::BITCAST, MVT::i32, Expand);
+  setOperationAction(ISD::BITCAST, MVT::f32, Expand);
+  setOperationAction(ISD::SELECT, MVT::i32, Expand);
+  setOperationAction(ISD::SELECT, MVT::f32, Expand);
+  setOperationAction(ISD::SETCC, MVT::i32, Expand);
+  setOperationAction(ISD::SETCC, MVT::f32, Expand);
+  setOperationAction(ISD::ConstantFP, MVT::f32, Legal);
+  // setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
+  // setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
+  //
   setOperationAction(ISD::XOR, MVT::i32, Expand);
-  // ISD::CondCode FPCCToExtend[] = {ISD::SETOGT, ISD::SETOGE, ISD::SETONE,
-  //                                 ISD::SETO,   ISD::SETUEQ, ISD::SETUGT,
-  //                                 ISD::SETUGE, ISD::SETULT, ISD::SETULE,
-  //                                 ISD::SETUNE, ISD::SETOLT};
-  // for (auto Op : FPCCToExtend)
-  //   setOperationAction(Op, MVT::f32, Expand);
+  ISD::CondCode FPCCToExtend[] = {ISD::SETO};
+  for (auto Op : FPCCToExtend)
+    setOperationAction(Op, MVT::f32, Expand);
 
   // setOperationAction(ISD::ConstantFP, MVT::f32, Custom);
-  for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD})
+  for (auto N : {ISD::EXTLOAD, ISD::SEXTLOAD, ISD::ZEXTLOAD}) {
     setLoadExtAction(N, MVT::i32, MVT::i1, Promote);
+  }
 
   // setTargetDAGCombine(ISD::BRCOND);
   // Function alignments (log2).
@@ -111,14 +121,16 @@ SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
   switch (Op.getOpcode()) {
   default:
     report_fatal_error("unimplemented operand");
-  case ISD::SELECT:
-    return lowerSelect(Op, DAG);
+  case ISD::SELECT_CC:
+    return lowerSelect_CC(Op, DAG);
   case ISD::BR_CC:
     return lowerBR_CC(Op, DAG);
   case ISD::ConstantPool:
     return lowerConstantPool(Op, DAG);
   case ISD::ConstantFP:
     return lowerConstantFP(Op, DAG);
+    // case ISD::FRAMEADDR:
+    //   return lowerFRAMEADDR(Op, DAG);
   }
 }
 
@@ -132,6 +144,10 @@ const char *ELMOTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "ELMOISD::BRICC";
   case ELMOISD::BRFCC:
     return "ELMOISD::BRFCC";
+  case ELMOISD::SELECT_ICC:
+    return "ELMOISD::SELECT_ICC";
+  case ELMOISD::SELECT_FCC:
+    return "ELMOISD::SELECT_FCC";
   case ELMOISD::SET_FLAGI:
     return "ELMOISD::SET_FLAGI";
   case ELMOISD::SET_FLAGF:
@@ -197,6 +213,8 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   SDValue Chain = CLI.Chain;
   SDValue Callee = CLI.Callee;
   bool &isTailCall = CLI.IsTailCall;
+  isTailCall = false;
+
   CallingConv::ID CallConv = CLI.CallConv;
   bool isVarArg = CLI.IsVarArg;
   MachineFunction &MF = DAG.getMachineFunction();
@@ -311,7 +329,7 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
   ISD::CondCode CC = cast<CondCodeSDNode>(Cond)->get();
   unsigned cc = ~0u;
   DAG.dump();
-  cc = IntCondCCodeToICC(CC);
+  cc = CondCCodeToICC(CC);
 
   bool swap_condition = false;
   bool swap_cont = true;
@@ -340,53 +358,32 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
                                                     : ELMOISD::BRFCC,
                      DL, MVT::Other, Chain, Dest, TargetCC, Flag);
 }
-SDValue ELMOTargetLowering::lowerSelect(SDValue Op, SelectionDAG &DAG) const {
-  SDValue CondV = Op.getOperand(0);
-  SDValue TrueV = Op.getOperand(1);
-  SDValue FalseV = Op.getOperand(2);
-  SDLoc DL(Op);
-  MVT XLenVT = MVT::i32;
+SDValue ELMOTargetLowering::lowerSelect_CC(SDValue Op,
+                                           SelectionDAG &DAG) const {
+  SDValue LHS = Op.getOperand(0);
+  SDValue RHS = Op.getOperand(1);
+  ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(4))->get();
+  SDValue TrueVal = Op.getOperand(2);
+  SDValue FalseVal = Op.getOperand(3);
+  SDLoc dl(Op);
+  unsigned Opc, SPCC = ~0U;
 
-  // If the result type is XLenVT and CondV is the output of a SETCC node
-  // which also operated on XLenVT inputs, then merge the SETCC node into the
-  // lowered RISCVISD::SELECT_CC to take advantage of the integer
-  // compare+branch instructions. i.e.:
-  // (select (setcc lhs, rhs, cc), truev, falsev)
-  // -> (riscvisd::select_cc lhs, rhs, cc, truev, falsev)
-  /*
-   * if (Op.getSimpleValueType() == XLenVT && CondV.getOpcode() == ISD::SETCC &&
-      CondV.getOperand(0).getSimpleValueType() == XLenVT) {
-      SDValue LHS = CondV.getOperand(0);
-      SDValue RHS = CondV.getOperand(1);
-      auto CC = cast<CondCodeSDNode>(CondV.getOperand(2));
-      ISD::CondCode CCVal = CC->get();
+  // If this is a select_cc of a "setcc", and if the setcc got lowered into
+  // an CMP[IF]CC/SELECT_[IF]CC pair, find the original compared values.
 
-      normaliseSetCC(LHS, RHS, CCVal);
-
-      SDValue TargetCC = DAG.getConstant(CCVal, DL, XLenVT);
-      SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
-      SDValue Ops[] = {LHS, RHS, TargetCC, TrueV, FalseV};
-      return DAG.getNode(ELMOISD::SELECT_CC, DL, VTs, Ops);
+  SDValue CompareFlag;
+  if (LHS.getValueType() == MVT::i32) {
+    CompareFlag = DAG.getNode(ELMOISD::SET_FLAGI, dl, MVT::Glue, LHS, RHS);
+    Opc = ELMOISD::SELECT_ICC;
+    SPCC = CondCCodeToICC(CC);
+  } else {
+    CompareFlag = DAG.getNode(ELMOISD::SET_FLAGF, dl, MVT::Glue, LHS, RHS);
+    Opc = ELMOISD::SELECT_FCC;
+    SPCC = CondCCodeToICC(CC);
   }
-  */
-
-  // Otherwise:
-  // (select condv, truev, falsev)
-  // -> (riscvisd::select_cc condv, zero, setne, truev, falsev)
-  SDValue Zero = DAG.getConstant(0, DL, XLenVT);
-  SDValue SetNE = DAG.getConstant(ISD::SETNE, DL, XLenVT);
-
-  SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
-  SDValue Ops[] = {CondV, Zero, SetNE, TrueV, FalseV};
-
-  return DAG.getNode(ELMOISD::SELECT_CC, DL, VTs, Ops);
+  return DAG.getNode(Opc, dl, TrueVal.getValueType(), TrueVal, FalseVal,
+                     DAG.getConstant(SPCC, dl, MVT::i32), CompareFlag);
 }
-
-// SDValue ELMOTargetLowering::lowerAND(SDValue Op, SelectionDAG &DAG) const {
-//   SDValue lhs = Op.getOperand(0);
-//   SDValue rhs = Op.getOperand(1);
-//   DAG.getN(ISD::ADD
-// }
 SDValue ELMOTargetLowering::lowerConstantFP(SDValue Op,
                                             SelectionDAG &DAG) const {
   // auto CurDAG = DAG;
@@ -425,5 +422,72 @@ SDValue ELMOTargetLowering::lowerConstantPool(SDValue Op,
     return M;
   } else {
     report_fatal_error("Unable to lowerConstantPool");
+  }
+}
+MachineBasicBlock *ELMOTargetLowering::expandSelectCC(MachineInstr &MI,
+                                                      MachineBasicBlock *BB,
+                                                      unsigned s) const {
+  const TargetInstrInfo &TII = *Subtarget->getInstrInfo();
+  DebugLoc dl = MI.getDebugLoc();
+  unsigned CC = (ELMOCC::CondCodes)MI.getOperand(3).getImm();
+
+  // To "insert" a SELECT_CC instruction, we actually have to insert the
+  // triangle control-flow pattern. The incoming instruction knows the
+  // destination vreg to set, the condition code register to branch on, the
+  // true/false values to select between, and the condition code for the branch.
+  //
+  // We produce the following control flow:
+  //     ThisMBB
+  //     |  \
+  //     |  IfFalseMBB
+  //     | /
+  //    SinkMBB
+  const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  MachineFunction::iterator It = ++BB->getIterator();
+
+  MachineBasicBlock *ThisMBB = BB;
+  MachineFunction *F = BB->getParent();
+  MachineBasicBlock *IfFalseMBB = F->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *SinkMBB = F->CreateMachineBasicBlock(LLVM_BB);
+  F->insert(It, IfFalseMBB);
+  F->insert(It, SinkMBB);
+
+  // Transfer the remainder of ThisMBB and its successor edges to SinkMBB.
+  SinkMBB->splice(SinkMBB->begin(), ThisMBB,
+                  std::next(MachineBasicBlock::iterator(MI)), ThisMBB->end());
+  SinkMBB->transferSuccessorsAndUpdatePHIs(ThisMBB);
+
+  // Set the new successors for ThisMBB.
+  ThisMBB->addSuccessor(IfFalseMBB);
+  ThisMBB->addSuccessor(SinkMBB);
+
+  BuildMI(ThisMBB, dl, TII.get(s)).addMBB(SinkMBB).addImm(CC);
+
+  // IfFalseMBB just falls through to SinkMBB.
+  IfFalseMBB->addSuccessor(SinkMBB);
+
+  // %Result = phi [ %TrueValue, ThisMBB ], [ %FalseValue, IfFalseMBB ]
+  BuildMI(*SinkMBB, SinkMBB->begin(), dl, TII.get(ELMO::PHI),
+          MI.getOperand(0).getReg())
+      .addReg(MI.getOperand(1).getReg())
+      .addMBB(ThisMBB)
+      .addReg(MI.getOperand(2).getReg())
+      .addMBB(IfFalseMBB);
+
+  MI.eraseFromParent(); // The pseudo instruction is gone now.
+  return SinkMBB;
+}
+MachineBasicBlock *
+ELMOTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
+                                                MachineBasicBlock *BB) const {
+  switch (MI.getOpcode()) {
+  default:
+    llvm_unreachable("unknown select_cc");
+  case ELMO::SELECT_CC_Int_ICC:
+  case ELMO::SELECT_CC_FP_ICC:
+    return expandSelectCC(MI, BB, ELMO::BRICC);
+  case ELMO::SELECT_CC_Int_FCC:
+  case ELMO::SELECT_CC_FP_FCC:
+    return expandSelectCC(MI, BB, ELMO::BRFCC);
   }
 }

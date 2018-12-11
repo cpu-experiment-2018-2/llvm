@@ -21,6 +21,10 @@ public:
 
   const ELMORegisterInfo &getRegisterInfo() const { return RI; }
 
+  unsigned insertBranch(
+    MachineBasicBlock &MBB, MachineBasicBlock *TBB, MachineBasicBlock *FBB,
+    ArrayRef<MachineOperand> Cond, const DebugLoc &DL, int *BytesAdded) const override;
+
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
                    const DebugLoc &DL, unsigned DestinationRegister,
                    unsigned SourceRegister, bool KillSource) const override;

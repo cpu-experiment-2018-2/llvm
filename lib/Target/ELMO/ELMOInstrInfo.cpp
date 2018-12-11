@@ -30,6 +30,34 @@ void ELMOInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       .addReg(SourceRegister, getKillRegState(KillSource))
       .addImm(0);
 }
+
+unsigned ELMOInstrInfo::insertBranch(
+    MachineBasicBlock &MBB, MachineBasicBlock *TBB, MachineBasicBlock *FBB,
+    ArrayRef<MachineOperand> Cond, const DebugLoc &DL, int *BytesAdded) const {
+  assert(TBB && "insertBranch must not be told to insert a fallthrough");
+  assert((Cond.size() == 1 || Cond.size() == 0) &&
+         "ELMO branch conditions should have one component!");
+  assert(!BytesAdded && "code size not handled");
+
+  if (Cond.empty()) {
+    assert(!FBB && "Unconditional branch with multiple successors!");
+    BuildMI(&MBB, DL, get(ELMO::JMP)).addMBB(TBB);
+    return 1;
+  }
+
+  // Conditional branch
+  unsigned CC = Cond[0].getImm();
+
+  if (CC < 16)
+    BuildMI(&MBB, DL, get(ELMO::BRICC)).addMBB(TBB).addImm(CC);
+  else
+    BuildMI(&MBB, DL, get(ELMO::BRFCC)).addMBB(TBB).addImm(CC);
+  if (!FBB)
+    return 1;
+
+  BuildMI(&MBB, DL, get(ELMO::JMP)).addMBB(FBB);
+  return 2;
+}
 void ELMOInstrInfo::loadRegFromStackSlot(
     llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator Position,
     unsigned DestinationRegister, int FrameIndex,

@@ -76,14 +76,16 @@ static MCOperand LowerOperand(const MachineInstr *MI, const MachineOperand &MO,
 
   case MachineOperand::MO_Immediate:
     return MCOperand::createImm(MO.getImm());
-
+  case MachineOperand::MO_FPImmediate: {
+    float f = MO.getFPImm()->getValueAPF().convertToFloat();
+    return MCOperand::createImm(*(int *)(&f));
+  }
   case MachineOperand::MO_MachineBasicBlock:
   case MachineOperand::MO_GlobalAddress:
   case MachineOperand::MO_BlockAddress:
   case MachineOperand::MO_ExternalSymbol:
   case MachineOperand::MO_ConstantPoolIndex:
     return LowerSymbolOperand(MI, MO, AP);
-
   case MachineOperand::MO_RegisterMask:
     break;
   }

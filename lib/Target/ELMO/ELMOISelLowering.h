@@ -12,7 +12,8 @@ enum NodeType {
   Ret,
   BRICC,
   BRFCC,
-  SELECT_CC,
+  SELECT_ICC,
+  SELECT_FCC,
   SET_FLAGI,
   SET_FLAGF
 };
@@ -28,6 +29,9 @@ public:
   SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
   const char *getTargetNodeName(unsigned Opcode) const override;
 
+
+  MachineBasicBlock * expandSelectCC(MachineInstr&MI, MachineBasicBlock *MBB,unsigned s) const;
+  MachineBasicBlock * EmitInstrWithCustomInserter(MachineInstr&MI, MachineBasicBlock *MBB) const override;
   SDValue LowerCall(CallLoweringInfo &CLI,
                     SmallVectorImpl<SDValue> &InVals) const override;
   SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
@@ -39,9 +43,11 @@ public:
                           const llvm::SmallVectorImpl<ISD::InputArg> &Ins,
                           const llvm::SDLoc &dl, llvm::SelectionDAG &DAG,
                           SmallVectorImpl<SDValue> &InVals) const;
-  SDValue lowerSelect(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerSelect_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerConstantPool(SDValue Op, SelectionDAG &DAG) const;
+
+  SDValue lowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerConstantFP(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,

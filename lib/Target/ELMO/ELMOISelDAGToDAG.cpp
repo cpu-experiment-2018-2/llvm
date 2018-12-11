@@ -31,31 +31,25 @@ private:
 
 void ELMODAGToDAGISel::Select(SDNode *Node) {
   unsigned Opcode = Node->getOpcode();
-  // MVT XLenVT = MVT::i32;
+  MVT XLenVT = MVT::i32;
+
+  EVT VT = Node->getValueType(0);
   SDLoc DL(Node);
   // //
   //
   switch (Opcode) {
-  //
-  // case ISD::ConstantFP: {
-  //   WithColor::note() << "hogefuga\n";
-  //   auto N = cast<ConstantFPSDNode>(Node);
-  //   APInt x = N->getValueAPF().bitcastToAPInt();
-  //   SDValue CPAV = CurDAG->getConstant(x, SDLoc(), EVT(MVT::f32));
-  //   WithColor::note() << "nyan\n";
-  //   CPAV->dump();
-  //   WithColor::note() << "neko\n";
-  //   CurDAG->dump();
-  //   ReplaceNode(Node, CPAV.getNode());
-  //   WithColor::note() << "one\n";
-  //   CurDAG->dump();
-  //   break;
-  // }
-  default:
-    SelectCode(Node);
+  case ISD::FrameIndex: {
+    SDValue Imm = CurDAG->getTargetConstant(0, DL, XLenVT);
+    int FI = cast<FrameIndexSDNode>(Node)->getIndex();
+    SDValue TFI = CurDAG->getTargetFrameIndex(FI, VT);
+    ReplaceNode(Node, CurDAG->getMachineNode(ELMO::ADDiu, DL, VT, TFI, Imm));
+    return;
+  }
   }
 
-  WithColor::note() << "Select end\n";
+  SelectCode(Node);
+
+  // WithColor::note() << "Select end\n";
 }
 FunctionPass *llvm::createELMOISelDag(ELMOTargetMachine &TM) {
   return new ELMODAGToDAGISel(TM);
