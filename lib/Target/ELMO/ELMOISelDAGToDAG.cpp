@@ -34,9 +34,8 @@ void ELMODAGToDAGISel::Select(SDNode *Node) {
   MVT XLenVT = MVT::i32;
 
   EVT VT = Node->getValueType(0);
+  Node->dump();
   SDLoc DL(Node);
-  // //
-  //
   switch (Opcode) {
   case ISD::FrameIndex: {
     SDValue Imm = CurDAG->getTargetConstant(0, DL, XLenVT);

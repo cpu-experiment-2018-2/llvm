@@ -37,9 +37,9 @@ public:
   //   return ELMOInstPrinter::getRegisterName(RegNo);
   // }
 
-  // bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-  //                      unsigned AsmVariant, const char *ExtraCode,
-  //                      raw_ostream &O) override;
+  bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
+                       unsigned AsmVariant, const char *ExtraCode,
+                       raw_ostream &O) override;
   // bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
   //                            unsigned AsmVariant, const char *ExtraCode,
   //                            raw_ostream &O) override;
@@ -102,10 +102,31 @@ void ELMOAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   LowerELMOMachineInstrToMCInst(MI, TmpInst, *this);
   OutStreamer->EmitInstruction(TmpInst, STI);
 }
-// bool ELMOAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-//                                      unsigned AsmVariant, const char
-//                                      *ExtraCode,
-//                                      raw_ostream &O) {}
+bool ELMOAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
+                                     unsigned AsmVariant, const char *ExtraCode,
+                                     raw_ostream &OS) {
+  if (AsmVariant != 0)
+    report_fatal_error("There are no defined alternate asm variants");
+
+  // First try the generic code, which knows about modifiers like 'c' and 'n'.
+  if (!AsmPrinter::PrintAsmOperand(MI, OpNo, AsmVariant, ExtraCode, OS))
+    return false;
+
+  if (!ExtraCode) {
+    const MachineOperand &MO = MI->getOperand(OpNo);
+    switch (MO.getType()) {
+    case MachineOperand::MO_Immediate:
+      OS << MO.getImm();
+      return false;
+    case MachineOperand::MO_Register:
+      OS << "%" << ELMOInstPrinter::getRegisterName(MO.getReg());
+      return false;
+    default:
+      break;
+    }
+  }
+  return true;
+}
 // bool ELMOAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
 //                                            unsigned OpNo, unsigned
 //                                            AsmVariant,

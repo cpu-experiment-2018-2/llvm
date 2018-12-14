@@ -44,7 +44,6 @@ static ELMOCC::CondCodes CondCCodeToICC(ISD::CondCode CC) {
     return ELMOCC::FCC_LE;
   case ISD::SETOGE:
     return ELMOCC::FCC_GE;
-
   case ISD::SETUEQ:
     return ELMOCC::FCC_E;
   case ISD::SETUNE:
@@ -89,8 +88,11 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::SELECT, MVT::i32, Expand);
   setOperationAction(ISD::SELECT, MVT::f32, Expand);
   setOperationAction(ISD::SETCC, MVT::i32, Expand);
+  // setOperationAction(ISD::FFLOOR, MVT::f32, Expand);
   setOperationAction(ISD::SETCC, MVT::f32, Expand);
   setOperationAction(ISD::ConstantFP, MVT::f32, Legal);
+  setOperationAction(ISD::FFLOOR, MVT::f32, Legal);
+
   // setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
   // setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
   //
@@ -424,6 +426,7 @@ SDValue ELMOTargetLowering::lowerConstantPool(SDValue Op,
     report_fatal_error("Unable to lowerConstantPool");
   }
 }
+
 MachineBasicBlock *ELMOTargetLowering::expandSelectCC(MachineInstr &MI,
                                                       MachineBasicBlock *BB,
                                                       unsigned s) const {
@@ -489,5 +492,19 @@ ELMOTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
   case ELMO::SELECT_CC_Int_FCC:
   case ELMO::SELECT_CC_FP_FCC:
     return expandSelectCC(MI, BB, ELMO::BRFCC);
+  }
+}
+std::pair<unsigned, const TargetRegisterClass *>
+ELMOTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
+                                                 StringRef Constraint,
+                                                 MVT VT) const {
+  // First, see if this is a constraint that directly corresponds to a
+  if (Constraint.size() == 1) {
+    switch (Constraint[0]) {
+    case 'r':
+      return std::make_pair(0U, &ELMO::ELMOGRRegsRegClass);
+    default:
+      break;
+    }
   }
 }

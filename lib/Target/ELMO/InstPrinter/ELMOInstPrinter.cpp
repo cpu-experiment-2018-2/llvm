@@ -45,5 +45,5 @@ void ELMOInstPrinter::printInst(const llvm::MCInst *MI, llvm::raw_ostream &OS,
                                 llvm::StringRef Annot,
                                 const llvm::MCSubtargetInfo &STI) {
   printInstruction(MI, OS);
-  // printAnnotation(OS, s);
+  printAnnotation(OS, Annot);
 }

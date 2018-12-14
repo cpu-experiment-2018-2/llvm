@@ -10,6 +10,7 @@ enum NodeType {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
   Call,
   Ret,
+  Tail,
   BRICC,
   BRFCC,
   SELECT_ICC,
@@ -55,6 +56,11 @@ public:
                                const SmallVectorImpl<ISD::InputArg> &Ins,
                                const SDLoc &dl, SelectionDAG &DAG,
                                SmallVectorImpl<SDValue> &InVals) const override;
+  // inline asm
+  std::pair<unsigned, const TargetRegisterClass *>
+  getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
+                                   StringRef Constraint, MVT VT) const override;
+
 };
 } // namespace llvm
 #endif

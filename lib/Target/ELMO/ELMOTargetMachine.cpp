@@ -12,7 +12,7 @@ extern "C" void LLVMInitializeELMOTarget() {
   WithColor::note() << "TargetInit\n";
 }
 
-StringRef layout = "e-m:e-p:32:32-i64:64-n32-S128";
+StringRef layout = "e-m:e-p:32:32";
 ;
 // StringRef layout = "";
 

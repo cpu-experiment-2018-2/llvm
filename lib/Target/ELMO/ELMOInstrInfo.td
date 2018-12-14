@@ -152,6 +152,8 @@ def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>;
 def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>;
 def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>;
 def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>;
+def FLOOR  : ArithLogicX<0x09, "ffloor", ffloor, ELMOGRFRegs, ELMOGRFRegs>;
+
 
 
 
@@ -547,3 +549,4 @@ def : Pat<(add (i32 AddrFI:$Rs), imm32SExt16:$imm12),
           (ADDiu (i32 AddrFI:$Rs), imm32SExt16:$imm12)>;
 def : Pat<(IsOrAdd (i32 AddrFI:$Rs), imm32SExt16:$imm12),
           (ADDiu (i32 AddrFI:$Rs), immSExt16:$imm12)>;
+

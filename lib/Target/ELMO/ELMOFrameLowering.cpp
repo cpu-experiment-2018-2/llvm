@@ -99,6 +99,7 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
       // Adjust stack.
       BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
           .addReg(ELMO::SP)
+          //.addImm(StackSize)
           .addImm(StackSize / 4)
           .setMIFlag(MachineInstr::FrameSetup);
     }
