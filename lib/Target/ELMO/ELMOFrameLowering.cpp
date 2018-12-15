@@ -61,11 +61,11 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
   unsigned StackReg = ELMO::SP;
 
   if (MFI.hasStackObjects()) {
-    BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
-        .addReg(ELMO::FP)
-        .addImm(0);
-    BuildMI(MBB, MBBI, dl, TII.get(ELMO::LOAD), ELMO::FP)
-        .addReg(ELMO::FP)
+    // BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
+    //     .addReg(ELMO::FP)
+    //     .addImm(0);
+    BuildMI(MBB, MBBI, dl, TII.get(ELMO::LOAD), ELMO::SP)
+        .addReg(ELMO::SP)
         .addImm(0);
   }
 
@@ -90,23 +90,28 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
 
   if (MFI.hasStackObjects()) {
-    BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::FP)
-        .addReg(ELMO::SP)
-        .addImm(0);
     if (StackSize) {
-      // アホなので治したい
       StackSize += 4;
-      // Adjust stack.
+      BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::SP)
+          .addReg(ELMO::SP)
+          .addImm(-(StackSize / 4));
+
       BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
           .addReg(ELMO::SP)
-          //.addImm(StackSize)
-          .addImm(StackSize / 4)
-          .setMIFlag(MachineInstr::FrameSetup);
+          .addImm(-(StackSize / 4));
+      // .setMIFlag(MachineInstr::StackSetup);
+      // アホなので治したい
+      //
+      // Adjust stack.
+      // BuildMI(MBB, MBBI, dl, TII.get(ELMO::ADDiu), ELMO::SP)
+      //     .addReg(ELMO::SP)
+      //     //.addImm(StackSize)
+      //     .addImm(StackSize / 4)
+      //     .setMIFlag(MachineInstr::FrameSetup);
     }
-    //
-    BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::FP)
-        .addReg(ELMO::SP)
-        .addImm(0);
+    // BuildMI(MBB, MBBI, dl, TII.get(ELMO::STORE), ELMO::FP)
+    //     .addReg(ELMO::SP)
+    //     .addImm(0);
   }
 
   WithColor::note() << "Emit prologue end\n";

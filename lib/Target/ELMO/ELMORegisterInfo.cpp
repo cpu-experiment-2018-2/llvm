@@ -54,7 +54,7 @@ void ELMORegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 }
 
 unsigned ELMORegisterInfo::getFrameRegister(const MachineFunction &m) const {
-  return ELMO::FP;
+  return ELMO::SP;
 };
 bool ELMORegisterInfo::isConstantPhysReg(unsigned PhysReg) const {
   return PhysReg == ELMO::ZERO;

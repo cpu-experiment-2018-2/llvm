@@ -119,7 +119,7 @@ bool ELMOAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
       OS << MO.getImm();
       return false;
     case MachineOperand::MO_Register:
-      OS << "%" << ELMOInstPrinter::getRegisterName(MO.getReg());
+      OS << ELMOInstPrinter::getRegisterName(MO.getReg());
       return false;
     default:
       break;
