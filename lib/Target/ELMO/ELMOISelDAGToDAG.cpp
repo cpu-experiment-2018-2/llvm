@@ -9,12 +9,13 @@ class ELMODAGToDAGISel : public SelectionDAGISel {
   const ELMOSubtarget *Subtarget;
 
 public:
-  explicit ELMODAGToDAGISel(ELMOTargetMachine &tm) : SelectionDAGISel(tm) {
-    WithColor::note() << "SelectionDAGIsel inited\n";
-  };
+  explicit ELMODAGToDAGISel(ELMOTargetMachine &tm)
+      : SelectionDAGISel(tm){
+            // WithColor::note() << "SelectionDAGIsel inited\n";
+        };
   bool runOnMachineFunction(MachineFunction &MF) override {
     Subtarget = &MF.getSubtarget<ELMOSubtarget>();
-    WithColor::note() << "DAGToDAGIsel\n";
+    // WithColor::note() << "DAGToDAGIsel\n";
     return SelectionDAGISel::runOnMachineFunction(MF);
   }
   StringRef getPassName() const override {
@@ -34,7 +35,7 @@ void ELMODAGToDAGISel::Select(SDNode *Node) {
   MVT XLenVT = MVT::i32;
 
   EVT VT = Node->getValueType(0);
-  Node->dump();
+  // Node->dump();
   SDLoc DL(Node);
   switch (Opcode) {
   case ISD::FrameIndex: {

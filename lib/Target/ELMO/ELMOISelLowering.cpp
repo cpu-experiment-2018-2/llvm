@@ -32,7 +32,6 @@ static ELMOCC::CondCodes CondCCodeToICC(ISD::CondCode CC) {
   case ISD::SETOEQ:
     return ELMOCC::FCC_E;
   case ISD::SETO:
-    // いいんか
     return ELMOCC::FCC_E;
   case ISD::SETONE:
     return ELMOCC::FCC_NE;
@@ -119,7 +118,7 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
 SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
                                            llvm::SelectionDAG &DAG) const {
 
-  WithColor::note() << "ISelLowering executed\n";
+  // WithColor::note() << "ISelLowering executed\n";
   switch (Op.getOpcode()) {
   default:
     report_fatal_error("unimplemented operand");
@@ -154,7 +153,8 @@ const char *ELMOTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "ELMOISD::SET_FLAGI";
   case ELMOISD::SET_FLAGF:
     return "ELMOISD::SET_FLAGF";
-
+  case ELMOISD::Tail:
+    return "ELMOISD::Tail";
   default:
     return nullptr;
   }
@@ -215,7 +215,11 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   SDValue Chain = CLI.Chain;
   SDValue Callee = CLI.Callee;
   bool &isTailCall = CLI.IsTailCall;
-  isTailCall = false;
+  if (isTailCall) {
+    WithColor::note() << "TAIL\n";
+    //  DAG.dump();
+  }
+  // isTailCall = false;
 
   CallingConv::ID CallConv = CLI.CallConv;
   bool isVarArg = CLI.IsVarArg;
@@ -231,7 +235,8 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   // Get the size of the outgoing arguments stack space requirement.
   unsigned NumBytes = CCInfo.getNextStackOffset();
 
-  Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
+  if (!isTailCall)
+    Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, dl);
 
   SmallVector<std::pair<unsigned, SDValue>, 4> RegsToPass;
 
@@ -254,7 +259,6 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee);
   Callee = DAG.getTargetGlobalAddress(G->getGlobal(), dl, MVT::i32);
 
-  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
   SmallVector<SDValue, 8> Ops;
   Ops.push_back(Chain);
   Ops.push_back(Callee);
@@ -271,6 +275,11 @@ SDValue ELMOTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   if (InFlag.getNode())
     Ops.push_back(InFlag);
 
+  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+  if (isTailCall) {
+    MF.getFrameInfo().setHasTailCall();
+    return DAG.getNode(ELMOISD::Tail, dl, NodeTys, Ops);
+  }
   Chain = DAG.getNode(ELMOISD::Call, dl, NodeTys, Ops);
   InFlag = Chain.getValue(1);
   Chain = DAG.getCALLSEQ_END(
@@ -330,7 +339,7 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 
   ISD::CondCode CC = cast<CondCodeSDNode>(Cond)->get();
   unsigned cc = ~0u;
-  DAG.dump();
+  // DAG.dump();
   cc = CondCCodeToICC(CC);
 
   bool swap_condition = false;

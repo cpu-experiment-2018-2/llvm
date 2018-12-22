@@ -11,7 +11,7 @@ class ELMOCond<bits<5> Enc, string n> : ELMOReg<Enc, n>;
 let Namespace = "ELMO" in {
   //@ General Purpose Registers
   def ZERO : ELMOGPRReg<0, "r0">, DwarfRegNum<[ 0 ]>;
-  def FP : ELMOGPRReg<1, "fp">, DwarfRegNum<[ 1 ]>;
+  def ONE : ELMOGPRReg<1, "r1">, DwarfRegNum<[ 1 ]>;
   def SP : ELMOGPRReg<2, "sp">, DwarfRegNum<[ 2 ]>;
   def G3 : ELMOGPRReg<3, "r3">, DwarfRegNum<[ 3 ]>;
   def G4 : ELMOGPRReg<4, "r4">, DwarfRegNum<[ 4 ]>;
@@ -50,9 +50,9 @@ let Namespace = "ELMO" in {
 //===----------------------------------------------------------------------===//
 
 def ELMOGRRegs : RegisterClass<"ELMO", [ i32 ], 32,
-                               (add ZERO, FP, SP, (sequence "G%u", 3, 30), LK)>;
+                               (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>;
 def ELMOGRFRegs
     : RegisterClass<"ELMO", [ f32 ], 32,
-                    (add ZERO, FP, SP, (sequence "G%u", 3, 30), LK)>;
+                    (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>;
 
 def COND : RegisterClass<"ELMO", [ i32 ], 32, (add C)>;

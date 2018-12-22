@@ -57,14 +57,14 @@ unsigned ELMORegisterInfo::getFrameRegister(const MachineFunction &m) const {
   return ELMO::SP;
 };
 bool ELMORegisterInfo::isConstantPhysReg(unsigned PhysReg) const {
-  return PhysReg == ELMO::ZERO;
+  return PhysReg == ELMO::ZERO || PhysReg == ELMO::ONE;
 }
 
 BitVector ELMORegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
   markSuperRegs(Reserved, ELMO::LK);
   markSuperRegs(Reserved, ELMO::SP);
-  markSuperRegs(Reserved, ELMO::FP);
+  markSuperRegs(Reserved, ELMO::ONE);
   markSuperRegs(Reserved, ELMO::ZERO);
 
   const ELMOSubtarget &Subtarget = MF.getSubtarget<ELMOSubtarget>();

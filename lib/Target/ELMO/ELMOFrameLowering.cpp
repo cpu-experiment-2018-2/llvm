@@ -51,8 +51,8 @@ ELMOFrameLowering::ELMOFrameLowering(ELMOSubtarget &St)
 void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
 
-  WithColor::note() << "Emit epilogue\n";
-  MBB.dump();
+  //  WithColor::note() << "Emit epilogue\n";
+  // MBB.dump();
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
 
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
@@ -69,7 +69,7 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
         .addImm(0);
   }
 
-  WithColor::note() << "Emit epilogue end\n";
+  //  WithColor::note() << "Emit epilogue end\n";
   /*
 }
 */
@@ -77,8 +77,8 @@ void ELMOFrameLowering::emitEpilogue(MachineFunction &MF,
 
 void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
-  WithColor::note() << "Emit prologue\n";
-  MBB.dump();
+  // WithColor::note() << "Emit prologue\n";
+  // MBB.dump();
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -114,7 +114,7 @@ void ELMOFrameLowering::emitPrologue(MachineFunction &MF,
     //     .addImm(0);
   }
 
-  WithColor::note() << "Emit prologue end\n";
+  // WithColor::note() << "Emit prologue end\n";
 }
 void ELMOFrameLowering::adjustReg(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator MBBI,
@@ -142,7 +142,7 @@ MachineBasicBlock::iterator ELMOFrameLowering::eliminateCallFramePseudoInstr(
     llvm::MachineFunction &MF, llvm::MachineBasicBlock &MBB,
     llvm::MachineBasicBlock::iterator MI) const {
   unsigned SPReg = ELMO::SP;
-  WithColor::note() << "PSEUDO ELIMMINATE\n";
+  // WithColor::note() << "PSEUDO ELIMMINATE\n";
   // DebugLoc DL = MI->getDebugLoc();
   //
   // if (!hasReservedCallFrame(MF)) {

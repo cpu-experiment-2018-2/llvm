@@ -15,13 +15,25 @@
 
 include "llvm/Target/Target.td"
 
-class Proc<string Name, list<SubtargetFeature> Features>
- : Processor<Name, NoItineraries, Features>;
-def : Proc<"generic", []>;
 
+
+include "ELMOScheduling.td"
 include "ELMORegisterInfo.td"
 include "ELMOInstrInfo.td"
 include "ELMOCallingConv.td"
+
+class Proc1<string Name,  list<SubtargetFeature> Features>
+ : Processor<Name, ELMOItineraries, Features> ;
+class Proc2<string Name,  list<SubtargetFeature> Features>
+ : Processor<Name, NoItineraries, Features> ;
+
+/* class Proc<string Name,  list<SubtargetFeature> Features> */
+/*  : Processor<Name, NoItineraries, Features>; */
+
+
+def : Proc2<"generic", []>;
+def : Proc1<"sched", []>;
+def : ProcessorModel<"schedmodel", ELMOSchedModel, []>; 
 
 def ELMOInstPrinter : AsmWriter {
     string AsmWriterClassName = "InstPrinter";

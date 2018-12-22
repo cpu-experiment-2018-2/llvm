@@ -1,9 +1,11 @@
 include "ELMOInstrFormats.td"
-
-def IICLoad   : InstrItinClass;
-def IICStore  : InstrItinClass;
-def IIBranch  : InstrItinClass;
-def IIAlu  : InstrItinClass;
+/*  */
+/* def IICLoad   : InstrItinClass; */
+/* def IICStore  : InstrItinClass; */
+/* def IIBranch  : InstrItinClass; */
+/* def IIAlu  : InstrItinClass; */
+/* def IIFpu  : InstrItinClass; */
+/*  */
 
 def SDT_ELMOCallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>,
                                             SDTCisVT<1, i32>]>;
@@ -41,19 +43,19 @@ let Uses = [C], usesCustomInserter = 1 in {
   def SELECT_CC_Int_ICC
    : Pseudo<(outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T, ELMOGRRegs:$F, i32imm:$Cond),
             "# SELECT_CC_Int_ICC PSEUDO!",
-            [(set i32:$dst, (ELMOselecticc i32:$T, i32:$F, imm:$Cond))],IIAlu>;
+            [(set i32:$dst, (ELMOselecticc i32:$T, i32:$F, imm:$Cond))],IIAlu>,Sched<[WriteALU2]>;
   def SELECT_CC_FP_ICC
    : Pseudo<(outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$T, ELMOGRFRegs:$F, i32imm:$Cond),
             "# SELECT_CC_FP_ICC PSEUDO!",
-            [(set f32:$dst, (ELMOselecticc f32:$T, f32:$F, imm:$Cond))], IIAlu>;
+            [(set f32:$dst, (ELMOselecticc f32:$T, f32:$F, imm:$Cond))], IIAlu>,Sched<[WriteALU2]>;
   def SELECT_CC_Int_FCC
    : Pseudo<(outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T, ELMOGRRegs:$F, i32imm:$Cond),
             "# SELECT_CC_Int_ICC PSEUDO!",
-            [(set i32:$dst, (ELMOselectfcc i32:$T, i32:$F, imm:$Cond))],IIAlu>;
+            [(set i32:$dst, (ELMOselectfcc i32:$T, i32:$F, imm:$Cond))],IIAlu>,Sched<[WriteALU2]>;
   def SELECT_CC_FP_FCC
    : Pseudo<(outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$T, ELMOGRFRegs:$F, i32imm:$Cond),
             "# SELECT_CC_FP_ICC PSEUDO!",
-            [(set f32:$dst, (ELMOselectfcc f32:$T, f32:$F, imm:$Cond))], IIAlu>;
+            [(set f32:$dst, (ELMOselectfcc f32:$T, f32:$F, imm:$Cond))], IIAlu>,Sched<[WriteALU2]>;
 
 }
 
@@ -82,6 +84,9 @@ def ELMObrfcc        : SDNode<"ELMOISD::BRFCC", SDT_ELMOBrCC,
 def ELMOCall : SDNode < "ELMOISD::Call", SDT_ELMOCall,
                               [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
                                SDNPVariadic]>;
+def ELMOTail         : SDNode<"ELMOISD::Tail", SDT_ELMOCall,
+                          [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
+                                                     SDNPVariadic]>;
 
 
 def CCOp : Operand<i32> {
@@ -144,17 +149,15 @@ def simm16      : Operand<i32> {
   let DecoderMethod= "DecodeSimm16";
 }
 def immSExt16  : PatLeaf<(imm), [{ return isInt<16>(N->getSExtValue());}]>;
-def ADDiu   : ArithLogicI<0x09, "addi", add, simm16, immSExt16, ELMOGRRegs>;
-def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>;
-def ShiftR  : ArithLogicI<0x09, "slawi", shl, simm16, immSExt16, ELMOGRRegs>;
-def ShifrLA  : ArithLogicI<0x09, "srawi", sra , simm16, immSExt16, ELMOGRRegs>;
-def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>;
-def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>;
-def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>;
-def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>;
-def FLOOR  : ArithLogicX<0x09, "ffloor", ffloor, ELMOGRFRegs, ELMOGRFRegs>;
-
-
+def ADDiu   : ArithLogicI<0x09, "addi", add, simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
+def SUBiu   : ArithLogicI<0x09, "subi", sub, simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
+def ShiftR  : ArithLogicI<0x09, "slawi", shl, simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
+def ShifrLA  : ArithLogicI<0x09, "srawi", sra , simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
+def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
+def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>, Sched<[WriteFPU3]>;
+def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;
+def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;
+def FLOOR  : ArithLogicX<0x09, "ffloor", ffloor, ELMOGRFRegs, ELMOGRFRegs>,Sched<[WriteFPU4]>;
 
 
 
@@ -167,40 +170,35 @@ def mem : Operand<i32> {
 }
 
 
-def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>;
-def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>;
-def AND  : ArithLogicR<0b000000, "and", and, IIAlu, ELMOGRRegs, 1>;
-def OR  : ArithLogicR<0b000001, "or", or , IIAlu, ELMOGRRegs, 1>;
-def XOR  : ArithLogicR<0b000000, "xor", xor, IIAlu, ELMOGRRegs, 1>;
-
-
-
-def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIAlu, ELMOGRFRegs, 1>;
-def FSUB  : ArithLogicR<0b000001, "fsub", fsub, IIAlu, ELMOGRFRegs, 0>;
-def FMUL  : ArithLogicR<0b000000, "fmul", fmul, IIAlu, ELMOGRFRegs, 1>;
-def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIAlu, ELMOGRFRegs, 0>;
-
+def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
+def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>,Sched<[WriteALU2]>;
+def AND  : ArithLogicR<0b000000, "and", and, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
+def XOR  : ArithLogicR<0b000000, "xor", xor, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
+def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIFpu, ELMOGRFRegs, 1>,Sched<[WriteFPU4]>;
+def FSUB  : ArithLogicR<0b000001, "fsub", fsub, IIFpu, ELMOGRFRegs, 0>,Sched<[WriteFPU4]>;
+def FMUL  : ArithLogicR<0b000000, "fmul", fmul, IIFpu, ELMOGRFRegs, 1>,Sched<[WriteFPU4]>;
+def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIFpu, ELMOGRFRegs, 0>,Sched<[WriteFPU6]>;
 
 /* def BLR  : RetInst<0b000010, "blr">;  */
 let mayLoad  = 1, hasSideEffects = 1 in
 {
 def LOAD  : FL<0b000011, (outs ELMOGRRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
     "load $rd, $rs1, $imm16", [], IICLoad
->;  
+>,Sched<[WriteALU4]>;  
 
 def LOADF  : FL<0b000011, (outs ELMOGRFRegs:$rd), (ins ELMOGRRegs:$rs1,simm16:$imm16),
     "load $rd, $rs1, $imm16", [], IICLoad
->; 
+>,Sched<[WriteALU4]>; 
 }
 let mayStore = 1 in
 {
 def STOREF  : FL<0b000011, (outs ), (ins ELMOGRFRegs:$rd, ELMOGRRegs:$rs1,simm16:$imm16),
     "store $rd, $rs1, $imm16", [], IICStore
->;  
+>,Sched<[WriteALU0]>;  
 
 def STORE  : FL<0b000011, (outs ), (ins ELMOGRRegs:$rd, ELMOGRRegs:$rs1,simm16:$imm16),
     "store $rd, $rs1, $imm16", [], IICStore
->;  
+>,Sched<[WriteALU0]>;  
 }
 
 
@@ -233,7 +231,7 @@ class JumpFR<bits<6> op, string instr_asm, RegisterClass RC>:
 }
 
 
-def JMP : UncondBranch<0b000000, "jump">;
+def JMP : UncondBranch<0b000000, "jump">,Sched<[WriteALU0]>;
 
 /* class CBranch<bits<6> op, string instr_asm, RegisterClass RC, */
 /*                    list<Register> UseRegs>: */
@@ -315,22 +313,24 @@ let isBranch = 1, isBarrier = 1, isTerminator = 1, hasDelaySlot = 1 , Uses = [C]
                       "b$DDDI\t$addr",
                       [(ELMObricc bb:$addr, imm:$DDDI)],
 	IIBranch
->;
+>,Sched<[WriteALU0]>;
     def BRFCC : FJ<0b000111,(outs), (ins brtarget:$addr, CCOp:$DDDI),
                       "b$DDDI\t$addr",
                       [(ELMObrfcc bb:$addr, imm:$DDDI)],
 	IIBranch
->;
+>,Sched<[WriteALU0]>;
 
 }
 
 
 
+
+
 let isReturn = 1,isBranch = 1, isTerminator=1, isBarrier = 1 in  
 {
-def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRRegs:$rc)] , IIBranch> ;
+def BLR : FI < 0b000000, (outs), (ins ELMOGRRegs:$rc), "blr",  [(ELMORet ELMOGRRegs:$rc)] , IIBranch>, Sched<[WriteALU0]> ;
 
-def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> ;
+def PseudoBLR : FI < 0b000000, (outs), (ins), "blr",  [(ELMORet2)] , IIBranch> , Sched<[WriteALU0]> ;
 }
 /* multiclass SetltPats<RegisterClass RC> { */
 /*   def : Pat<(setlt RC:$lhs, RC:$rhs), */
@@ -373,20 +373,20 @@ let Defs = [C] in {
 def CMPD : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, ELMOGRRegs:$Rs2),
                       "cmpd $Rs1,$Rs2",
                       [(ELMOSetFlagInt i32:$Rs1, i32 :$Rs2)],
-                      IIBranch
-                      >;
+                      IIAlu
+                      >,Sched<[WriteALU0]>;
 
 def CMPF : FJ<0b000000, (outs), (ins ELMOGRFRegs:$Rs1, ELMOGRFRegs:$Rs2),
                       "cmpf $Rs1,$Rs2",
                       [(ELMOSetFlagFP f32 :$Rs1, f32 :$Rs2)],
-                      IIBranch
-                      >;
+                      IIAlu
+                      >,Sched<[WriteALU0]>;
 
 def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
                       "cmpdi $Rs1,$imm",
                       [(ELMOSetFlagInt i32:$Rs1, (i32 psimm16:$imm))],
-                      IIBranch
-                      >;
+                      IIAlu
+                      >,Sched<[WriteALU0]>;
 }
 /* def : Pat<(setcc ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs, SETOGE), */
 /*             (CMPF ELMOGRFRegs:$lhs, ELMOGRFRegs:$rhs)>; */
@@ -398,10 +398,10 @@ def CMPDI : FJ<0b000000, (outs), (ins ELMOGRRegs:$Rs1, Im:$imm),
 let Defs = [SP], Uses = [SP] in {  
   def ADJCALLSTACKDOWN : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                 "#ADJCALLSTACKDOWN $amt1 $amt2",
-                                [(CallSeqStart timm:$amt1, timm:$amt2)], IIBranch>;
+                                [(CallSeqStart timm:$amt1, timm:$amt2)], IIBranch>,Sched<[WriteALU0]>;
   def ADJCALLSTACKUP   : Pseudo<(outs), (ins i32imm:$amt1, i32imm:$amt2),
                                 "#ADJCALLSTACKUP $amt1 $amt2",
-                                [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>;
+                                [(CallSeqEnd timm:$amt1, timm:$amt2)],IIBranch>,Sched<[WriteALU0]>;
   }  
 
 /* def SELECT : Pseudo<(outs ELMOGRRegs:$Rd), */
@@ -415,26 +415,31 @@ let Defs = [SP], Uses = [SP] in {
 def bare_symbol : Operand<OtherVT> {
 }
 let isCall = 1, hasDelaySlot = 1, isCodeGenOnly = 1,  Defs = [LK] in { 
-/* def CALL : Pseudo<(outs), (ins brtarget:$addr), "bl $addr", [], IIBranch>; */
 def PseudoCALL : Pseudo<(outs), (ins Im:$func),
                         "bl $func",
-                        [(ELMOCall tglobaladdr:$func)], IIBranch>;
-def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>;
+                        [(ELMOCall tglobaladdr:$func)], IIBranch>,Sched<[WriteALU0]> ;
+
+def CALLR : Pseudo<(outs), (ins ELMOGRRegs:$Rs1), "blrr $Rs1", [(ELMOCall ELMOGRRegs:$Rs1)],IIBranch>,Sched<[WriteALU0]> ;
 
 
 } 
+let isCall = 1, isTerminator = 1, isReturn = 1 , isBarrier = 1 , Uses = [SP] , isCodeGenOnly = 0 in
+def PseudoTAIL : Pseudo<(outs), (ins Im:$func),
+                        "jump $func # tail call",
+                        [(ELMOTail tglobaladdr:$func)], IIBranch>,Sched<[WriteALU0]> ;
+
 let isReMaterializable = 1, isAsCheapAsAMove = 1, isMoveImm = 1 in {
   def LI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
                        "li $rD, $imm", 
-                       [(set i32:$rD, imm32SExt16:$imm)], IIAlu>;
+                       [(set i32:$rD, imm32SExt16:$imm)], IIAlu>,Sched<[WriteALU2]>;
 
   def LWI  : FJ<14, (outs ELMOGRRegs:$rD), (ins Im:$imm),
                        "liw $rD, $imm", 
-                       [(set i32:$rD, imm32:$imm)], IIAlu>;
+                       [(set i32:$rD, imm32:$imm)], IIAlu>,Sched<[WriteALU2]>;
 
   def LWIF  : FJ<14, (outs ELMOGRFRegs:$rD), (ins Imf:$imm),
                        "liw $rD, $imm", 
-                       [(set f32:$rD, fpimm:$imm)], IIAlu>;
+                       [(set f32:$rD, fpimm:$imm)], IIAlu>,Sched<[WriteALU2]>;
 }
 class FJJ<bits<6> op, dag outs, dag ins, string asmstr, list<dag> pattern,
          InstrItinClass itin> : ELMOInst<outs, ins, asmstr, pattern, itin> {
@@ -550,3 +555,32 @@ def : Pat<(add (i32 AddrFI:$Rs), imm32SExt16:$imm12),
 def : Pat<(IsOrAdd (i32 AddrFI:$Rs), imm32SExt16:$imm12),
           (ADDiu (i32 AddrFI:$Rs), immSExt16:$imm12)>;
 
+def NopDummyUnary : FI < 0b000000, (outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T), "# dummy",  [] , IIAlu> ;
+
+
+def: Pat<(and ELMOGRRegs
+      : $r , 1), (NopDummyUnary ELMOGRRegs:$r)>;
+def: Pat<(or ELMOGRRegs
+      : $r , 0), (NopDummyUnary ELMOGRRegs:$r)>;
+def: Pat<(xor ELMOGRRegs
+       : $rs1, 0),
+       (NopDummyUnary ELMOGRRegs:$rs1)>;
+def: Pat<(sub 0, ELMOGRRegs : $rs1),
+       (SUB ZERO, ELMOGRRegs: $rs1)>;
+
+def: Pat<(or ELMOGRRegs:$l, ELMOGRRegs:$r),
+        (XOR (XOR (AND ELMOGRRegs:$l, ELMOGRRegs:$r), $l),$r)>;
+
+
+/* def: Pat<(and ELMOGRRegs, 0), (LI 0)>;  */
+/* def: Pat<(or ELMOGRRegs:$r, 1), (OR ELMOGRRegs:$r, 1)>; */
+
+/* def: Pat<(xor ELMOGRRegs */
+/*        : $rs1, 1), */
+/*        (OR ELMOGRRegs : $rs1, ONE)>; */
+/*  */
+/* def: Pat<(xor ELMOGRRegs */
+/*        : $rs1, 0), */
+/*        (OR ELMOGRRegs : $rs1, ZERO)>; */
+/*  */
+/*  */

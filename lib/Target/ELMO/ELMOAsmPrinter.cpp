@@ -97,7 +97,7 @@ public:
 void ELMOAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   // ELMOMCInstLower MCInstLowering(OutContext, *this);
   MCSubtargetInfo STI = getSubtargetInfo();
-  MI->dump();
+  // MI->dump();
   MCInst TmpInst;
   LowerELMOMachineInstrToMCInst(MI, TmpInst, *this);
   OutStreamer->EmitInstruction(TmpInst, STI);
