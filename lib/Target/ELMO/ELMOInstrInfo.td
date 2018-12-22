@@ -32,6 +32,8 @@ def ELMOSetFlagFP     : SDNode<"ELMOISD::SET_FLAGF", SDT_ELMOSetFlagFP,
 
 
 
+
+
 def SDT_ELMOSelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
                                                 SDTCisSameAs<1, 2>,
                                                 SDTCisVT<3, i32>
@@ -171,6 +173,7 @@ def mem : Operand<i32> {
 
 
 def ADD  : ArithLogicR<0b000000, "add", add, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
+def MUL  : ArithLogicR<0b000000, "#mul", mul, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
 def SUB  : ArithLogicR<0b000001, "sub", sub, IIAlu, ELMOGRRegs, 0>,Sched<[WriteALU2]>;
 def AND  : ArithLogicR<0b000000, "and", and, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
 def XOR  : ArithLogicR<0b000000, "xor", xor, IIAlu, ELMOGRRegs, 1>,Sched<[WriteALU2]>;
@@ -526,8 +529,7 @@ def: Pat<(StoreOp Reg
        : $rs1, immSExt16 
        : $imm16),
       (Inst Reg
-       : $rs1, ZERO , immSExt16
-       : $imm16)>;
+       : $rs1, ZERO , immSExt16:$imm16)>;
 def: Pat<(StoreOp Reg
        : $rs1, ELMOGRRegs
        : $rs2),
@@ -547,9 +549,21 @@ defm : LdPat<load, LOAD>;
 defm : LdPat<load, LOADF>;
 defm : LdPat<zextloadi8, LOAD>;
 defm : LdPat<zextloadi8, LOADF>;
+defm : LdPat<sextloadi8, LOAD>;
+defm : LdPat<sextloadi8, LOADF>;
+defm : LdPat<extloadi8, LOAD>;
+defm : LdPat<extloadi8, LOADF>;
+
+
 
 defm : StPat<store, STORE, ELMOGRRegs>;
 defm : StPat<store, STOREF, ELMOGRFRegs>;
+defm : StPat<truncstorei8, STORE, ELMOGRRegs>;
+defm : StPat<truncstorei8, STOREF, ELMOGRFRegs>;
+defm : StPat<truncstorei16, STORE, ELMOGRRegs>;
+defm : StPat<truncstorei16, STOREF, ELMOGRFRegs>;
+
+
 def : Pat<(add (i32 AddrFI:$Rs), imm32SExt16:$imm12),
           (ADDiu (i32 AddrFI:$Rs), imm32SExt16:$imm12)>;
 def : Pat<(IsOrAdd (i32 AddrFI:$Rs), imm32SExt16:$imm12),
@@ -584,3 +598,6 @@ def: Pat<(or ELMOGRRegs:$l, ELMOGRRegs:$r),
 /*        (OR ELMOGRRegs : $rs1, ZERO)>; */
 /*  */
 /*  */
+def ELMOSmall       : SDNode<"ELMOISD::Small", SDTIntUnaryOp>;
+def : Pat<(ELMOSmall tglobaladdr:$dst), (LWI tglobaladdr:$dst)>;
+

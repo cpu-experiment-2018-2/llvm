@@ -71,7 +71,7 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   AddPromotedToType(ISD::SETCC, MVT::i1, MVT::i32);
   setOperationAction(ISD::BR_CC, MVT::i32, Custom);
   setOperationAction(ISD::BR_CC, MVT::f32, Custom);
-  // setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
+  setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
 
   // AddPromotedToType(ISD::ConstantFP, MVT::f32, MVT::i32);
   // for (auto CC : FPCCToExtend)
@@ -91,11 +91,13 @@ ELMOTargetLowering::ELMOTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::SETCC, MVT::f32, Expand);
   setOperationAction(ISD::ConstantFP, MVT::f32, Legal);
   setOperationAction(ISD::FFLOOR, MVT::f32, Legal);
+  setOperationAction(ISD::FABS, MVT::f32, Expand);
+  setOperationAction(ISD::FCOPYSIGN, MVT::f32, Expand);
 
   // setOperationAction(ISD::STACKSAVE, MVT::Other, Expand);
   // setOperationAction(ISD::STACKRESTORE, MVT::Other, Expand);
   //
-  setOperationAction(ISD::XOR, MVT::i32, Expand);
+  // setOperationAction(ISD::XOR, MVT::i32, Expand);
   ISD::CondCode FPCCToExtend[] = {ISD::SETO};
   for (auto Op : FPCCToExtend)
     setOperationAction(Op, MVT::f32, Expand);
@@ -130,8 +132,8 @@ SDValue ELMOTargetLowering::LowerOperation(llvm::SDValue Op,
     return lowerConstantPool(Op, DAG);
   case ISD::ConstantFP:
     return lowerConstantFP(Op, DAG);
-    // case ISD::FRAMEADDR:
-    //   return lowerFRAMEADDR(Op, DAG);
+  case ISD::GlobalAddress:
+    return lowerGlobalAddress(Op, DAG);
   }
 }
 
@@ -395,6 +397,40 @@ SDValue ELMOTargetLowering::lowerSelect_CC(SDValue Op,
   return DAG.getNode(Opc, dl, TrueVal.getValueType(), TrueVal, FalseVal,
                      DAG.getConstant(SPCC, dl, MVT::i32), CompareFlag);
 }
+SDValue ELMOTargetLowering::lowerGlobalAddress(SDValue Op,
+                                               SelectionDAG &DAG) const {
+  SDLoc DL(Op);
+  EVT Ty = Op.getValueType();
+  GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
+  const GlobalValue *GV = N->getGlobal();
+  int64_t Offset = N->getOffset();
+  MVT XLenVT = MVT::i32;
+
+  SDValue Small = DAG.getTargetGlobalAddress(
+      GV, DL, getPointerTy(DAG.getDataLayout()), Offset);
+  return DAG.getNode(ISD::ADD, DL, MVT::i32,
+                     DAG.getRegister(ELMO::ZERO, MVT::i32),
+                     DAG.getNode(ELMOISD::Small, DL, MVT::i32, Small));
+  // if (isPositionIndependent())
+  //   report_fatal_error("Unable to lowerGlobalAddress");
+  // // In order to maximise the opportunity for common subexpression
+  // elimination,
+  // // emit a separate ADD node for the global address offset instead of
+  // folding
+  // // it in the global address node. Later peephole optimisations may choose
+  // to
+  // // fold it back in when profitable.
+  // SDValue GAHi = DAG.getTargetGlobalAddress(GV, DL, Ty, 0, RISCVII::MO_HI);
+  // SDValue GALo = DAG.getTargetGlobalAddress(GV, DL, Ty, 0, RISCVII::MO_LO);
+  // SDValue MNHi = SDValue(DAG.getMachineNode(RISCV::LUI, DL, Ty, GAHi), 0);
+  // SDValue MNLo =
+  //     SDValue(DAG.getMachineNode(RISCV::ADDI, DL, Ty, MNHi, GALo), 0);
+  // if (Offset != 0)
+  //   return DAG.getNode(ISD::ADD, DL, Ty, MNLo,
+  //                      DAG.getConstant(Offset, DL, XLenVT));
+  // return MNLo;
+}
+
 SDValue ELMOTargetLowering::lowerConstantFP(SDValue Op,
                                             SelectionDAG &DAG) const {
   // auto CurDAG = DAG;
