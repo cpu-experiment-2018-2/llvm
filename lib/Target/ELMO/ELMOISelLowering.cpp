@@ -339,27 +339,7 @@ SDValue ELMOTargetLowering::lowerBR_CC(SDValue Op, SelectionDAG &DAG) const {
 
   ISD::CondCode CC = cast<CondCodeSDNode>(Cond)->get();
   unsigned cc = ~0u;
-  // DAG.dump();
   cc = CondCCodeToICC(CC);
-
-  bool swap_condition = false;
-  bool swap_cont = true;
-
-  // switch (cc) {
-  // case ELMOCC::ICC_G:
-  //   cc = ELMOCC::ICC_L;
-  //   swap_condition = false;
-  //   break;
-  // case ELMOCC::ICC_GE:
-  //   cc = ELMOCC::ICC_LE;
-  //   swap_condition = false;
-  //   break;
-  // case ELMOCC::ICC_NE:
-  //   break;
-  // defuault:
-  //   break;
-  // }
-
   SDValue TargetCC = DAG.getConstant(cc, DL, MVT::i32);
   SDValue Flag = DAG.getNode(
       LHS.getValueType() == MVT::i32 ? ELMOISD::SET_FLAGI : ELMOISD::SET_FLAGF,

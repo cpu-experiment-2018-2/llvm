@@ -10,6 +10,7 @@ enum NodeType {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
   Call,
   Ret,
+  Small,
   Tail,
   BRICC,
   BRFCC,
@@ -49,6 +50,8 @@ public:
   SDValue lowerConstantPool(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue lowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
+
   SDValue lowerConstantFP(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,

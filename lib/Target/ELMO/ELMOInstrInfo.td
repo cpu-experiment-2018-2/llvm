@@ -156,7 +156,7 @@ def ShifrLA  : ArithLogicI<0x09, "srawi", sra , simm16, immSExt16, ELMOGRRegs>, 
 def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
 def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>, Sched<[WriteFPU3]>;
 def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;
-def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;
+def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>; 
 def FLOOR  : ArithLogicX<0x09, "ffloor", ffloor, ELMOGRFRegs, ELMOGRFRegs>,Sched<[WriteFPU4]>;
 
 
