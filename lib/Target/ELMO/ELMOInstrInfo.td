@@ -156,7 +156,8 @@ def ShifrLA  : ArithLogicI<0x09, "srawi", sra , simm16, immSExt16, ELMOGRRegs>, 
 def ShifrLL  : ArithLogicI<0x09, "srawi", srl , simm16, immSExt16, ELMOGRRegs>, Sched<[WriteALU2]>;
 def FTOI  : ArithLogicX<0x09, "ftoi", fp_to_sint, ELMOGRFRegs, ELMOGRRegs>, Sched<[WriteFPU3]>;
 def ITOF  : ArithLogicX<0x09, "itof", sint_to_fp, ELMOGRRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;
-def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>; 
+def SQRT  : ArithLogicX<0x09, "fsqrt", fsqrt, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>;  
+def FABS  : ArithLogicX<0x09, "abs", fabs, ELMOGRFRegs, ELMOGRFRegs>, Sched<[WriteFPU3]>; 
 def FLOOR  : ArithLogicX<0x09, "ffloor", ffloor, ELMOGRFRegs, ELMOGRFRegs>,Sched<[WriteFPU4]>;
 
 
@@ -178,6 +179,7 @@ def FADD  : ArithLogicR<0b000000, "fadd", fadd, IIFpu, ELMOGRFRegs, 1>,Sched<[Wr
 def FSUB  : ArithLogicR<0b000001, "fsub", fsub, IIFpu, ELMOGRFRegs, 0>,Sched<[WriteFPU4]>;
 def FMUL  : ArithLogicR<0b000000, "fmul", fmul, IIFpu, ELMOGRFRegs, 1>,Sched<[WriteFPU4]>;
 def FDIV  : ArithLogicR<0b000001, "fdiv", fdiv, IIFpu, ELMOGRFRegs, 0>,Sched<[WriteFPU6]>;
+
 
 /* def BLR  : RetInst<0b000010, "blr">;  */
 let mayLoad  = 1, hasSideEffects = 1 in
@@ -558,19 +560,38 @@ def : Pat<(IsOrAdd (i32 AddrFI:$Rs), imm32SExt16:$imm12),
 def NopDummyUnary : FI < 0b000000, (outs ELMOGRRegs:$dst), (ins ELMOGRRegs:$T), "# dummy",  [] , IIAlu> ;
 
 
-def: Pat<(and ELMOGRRegs
-      : $r , 1), (NopDummyUnary ELMOGRRegs:$r)>;
-def: Pat<(or ELMOGRRegs
-      : $r , 0), (NopDummyUnary ELMOGRRegs:$r)>;
+let isReMaterializable = 1, isCommutable = 0 in {
+    def FADDMUL3: FI < 0b000000, (outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$a , ELMOGRFRegs:$b, ELMOGRFRegs:$c , ELMOGRFRegs:$d , ELMOGRFRegs:$e , ELMOGRFRegs:$f), "faddmul3 $dst,$a,$b,$c,$d,$e,$f",  [
+        (set ELMOGRFRegs:$dst , (fadd (fadd (fmul ELMOGRFRegs:$a, ELMOGRFRegs:$b) ,(fmul ELMOGRFRegs:$c, ELMOGRFRegs:$d)), (fmul ELMOGRFRegs:$e, ELMOGRFRegs:$f) ))] , IIAlu>;
+    def FADDMUL2: FI < 0b000000, (outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$a , ELMOGRFRegs:$b, ELMOGRFRegs:$c , ELMOGRFRegs:$d ), "faddmul2 $dst,$a,$b,$c,$d",  [
+        (set ELMOGRFRegs:$dst , (fadd (fmul ELMOGRFRegs:$a, ELMOGRFRegs:$b) ,(fmul ELMOGRFRegs:$c, ELMOGRFRegs:$d)))] , IIAlu>;
+    /* def FADDSQUARE: FI < 0b000000, (outs ELMOGRFRegs:$dst), (ins ELMOGRFRegs:$a , ELMOGRFRegs:$b, ELMOGRFRegs:$c , ELMOGRFRegs:$d , ELMOGRFRegs:$e , ELMOGRFRegs:$f), "faddsquare $dst,$a,$b,$c,$d,$e,$f",  [ */
+    /*     (set ELMOGRFRegs:$dst , (fadd (fadd (fmul (fmul ELMOGRFRegs:$a, ELMOGRFRegs:$a) , ELMOGRFRegs:$b), (fmul (fmul ELMOGRFRegs:$c, ELMOGRFRegs:$c) , ELMOGRFRegs:$d)) , (fmul (fmul ELMOGRFRegs:$e, ELMOGRFRegs:$e), ELMOGRFRegs:$f )))] , IIAlu>; */
+}
+/*  */
+/*  */
+/* def: Pat<(and ELMOGRRegs */
+/*       : $r , 1), (NopDummyUnary ELMOGRRegs:$r)>; */
+/* def: Pat<(or ELMOGRRegs */
+/*       : $r , 0), (NopDummyUnary ELMOGRRegs:$r)>; */
 def: Pat<(xor ELMOGRRegs
-       : $rs1, 0),
-       (NopDummyUnary ELMOGRRegs:$rs1)>;
+       : $rs1, 1),
+       (XOR ELMOGRRegs:$rs1 , ONE)>;
+
+
+/* def: Pat<(and ELMOGRRegs */
+/*       : $r , 1), (NopDummyUnary ELMOGRRegs:$r)>; */
+/* def: Pat<(or ELMOGRRegs */
+/*       : $r , 0), (NopDummyUnary ELMOGRRegs:$r)>; */
+/* def: Pat<(xor ELMOGRRegs */
+/*        : $rs1, 0), */
+/*        (NopDummyUnary ELMOGRRegs:$rs1)>; */
+
 def: Pat<(sub 0, ELMOGRRegs : $rs1),
        (SUB ZERO, ELMOGRRegs: $rs1)>;
 
 def: Pat<(or ELMOGRRegs:$l, ELMOGRRegs:$r),
         (XOR (XOR (AND ELMOGRRegs:$l, ELMOGRRegs:$r), $l),$r)>;
-
 
 /* def: Pat<(and ELMOGRRegs, 0), (LI 0)>;  */
 /* def: Pat<(or ELMOGRRegs:$r, 1), (OR ELMOGRRegs:$r, 1)>; */

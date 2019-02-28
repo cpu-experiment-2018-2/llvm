@@ -70,4 +70,4 @@ BitVector ELMORegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   const ELMOSubtarget &Subtarget = MF.getSubtarget<ELMOSubtarget>();
   return Reserved;
 }
-}
+} // namespace llvm

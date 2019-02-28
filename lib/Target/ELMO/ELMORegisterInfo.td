@@ -39,8 +39,8 @@ let Namespace = "ELMO" in {
   def G26 : ELMOGPRReg<26, "r26">, DwarfRegNum<[ 26 ]>;
   def G27 : ELMOGPRReg<27, "r27">, DwarfRegNum<[ 27 ]>;
   def G28 : ELMOGPRReg<28, "r28">, DwarfRegNum<[ 28 ]>;
-  def G29 : ELMOGPRReg<29, "r29">, DwarfRegNum<[ 29 ]>;
-  def G30 : ELMOGPRReg<30, "r30">, DwarfRegNum<[ 30 ]>;
+  /* def G29 : ELMOGPRReg<29, "r29">, DwarfRegNum<[ 29 ]>; */
+  /* def G30 : ELMOGPRReg<30, "r30">, DwarfRegNum<[ 30 ]>; */
   def LK : ELMOGPRReg<31, "lr">, DwarfRegNum<[ 31 ]>;
   def C : ELMOCond<32, "condreg">, DwarfRegNum<[ 32 ]>;
 }
@@ -49,10 +49,18 @@ let Namespace = "ELMO" in {
 // Register Classes
 //===----------------------------------------------------------------------===//
 
+/* def ELMOGRRegs : RegisterClass<"ELMO", [ i32 ], 32, */
+/*                                (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>; */
+/* def ELMOGRFRegs */
+/*     : RegisterClass<"ELMO", [ f32 ], 32, */
+/*                     (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>; */
+/*  */
 def ELMOGRRegs : RegisterClass<"ELMO", [ i32 ], 32,
-                               (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>;
+                               (add ZERO, ONE, SP, (sequence "G%u", 3, 28), LK)>;
 def ELMOGRFRegs
     : RegisterClass<"ELMO", [ f32 ], 32,
-                    (add ZERO, ONE, SP, (sequence "G%u", 3, 30), LK)>;
+                    (add ZERO, ONE, SP, (sequence "G%u", 3, 28), LK)>;
+
+
 
 def COND : RegisterClass<"ELMO", [ i32 ], 32, (add C)>;
